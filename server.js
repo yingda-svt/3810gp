@@ -10,7 +10,6 @@ const client = new MongoClient(mongourl);
 const dbName = 'samples_mflix';
 const collectionName = 'comments';
 
-app.set('view engine', 'ejs');
 // 中间件配置
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -231,6 +230,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
