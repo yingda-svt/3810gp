@@ -1,8 +1,5 @@
 var express             = require('express'),
     app                 = express(),
-    passport            = require('passport'),
-    FacebookStrategy    = require('passport-facebook').Strategy,
-	{ MongoClient, ServerApiVersion, ObjectId } = require("mongodb"),
     session             = require('express-session'),
 	formidable 			= require('express-formidable'),
 	fsPromises 			= require('fs').promises;
@@ -233,6 +230,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
