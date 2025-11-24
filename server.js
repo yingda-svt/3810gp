@@ -78,7 +78,7 @@ app.post('/login', (req, res) => {
     req.session.userId = user.user_id;
     req.session.username = user.username;
     req.session.role = user.role;
-    res.redirect('/login');
+    res.redirect('/list');
   } else {
     res.render('login', { error: 'userID or password wrong, try  student1/123' });
   }
@@ -235,6 +235,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
