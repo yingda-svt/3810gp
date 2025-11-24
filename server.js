@@ -144,14 +144,15 @@ app.post('/update', (req, res) => {
   handle_Update(req, res);
 });
 
-app.all('*', (req, res) => {
-  res.status(404).render('info', { message: `${req.path} - Unknown request!` });
-});
 
 // Start server
 const port = process.env.PORT || 8099;
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
+});
+
+app.all('*', (req, res) => {
+  res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
 
 
