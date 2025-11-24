@@ -91,6 +91,16 @@ app.get('/list', requireLogin, (req, res) => {
   });
 });
 
+app.get('/detail', requireLogin, (req, res) => {
+  const courseId = req.query.course_id;
+  const course = mockCourses.find(c => c.course_id === courseId);
+
+  if (course) {
+    res.render('detail', { course: course });
+  } else {
+    res.redirect('/info?message=Course not found');
+  }
+});
 
 app.get('/dashboard', requireLogin, (req, res) => {
   res.render('dashboard', { 
@@ -235,6 +245,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
