@@ -8,13 +8,15 @@
     "express": "4.19.2",
     "express-formidable": "*",
     "mongodb": "6.9.0",
-    "nodemon": "2.0.22"
+    "nodemon": "2.0.22",
+    "express-session": "^1.17.3"
 },
     "engine": "node >= 16.0.0",
     "scripts": {
         "start": "node server"
     }
 }
+
 
 
 
