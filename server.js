@@ -11,7 +11,6 @@ const dbName = 'samples_mflix';
 const collectionName = 'comments';
 
 app.set('view engine', 'ejs');
-app.set('views', __dirname + '/views');
 
 // Helper functions
 const insertDocument = async (db, doc) => {
@@ -111,8 +110,10 @@ const handle_Update = async (req, res) => {
 };
 
 // Routes
+app.set('views', __dirname + '/views');
+
 app.get('/', (req, res) => {
-  res.send('Hello, server is running!');
+  res.redirect('/find');
 });
 
 app.get('/find', (req, res) => {
@@ -159,6 +160,7 @@ const port = process.env.PORT || 8099;
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
