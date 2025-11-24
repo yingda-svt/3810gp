@@ -112,17 +112,13 @@ const handle_Update = async (req, res) => {
 // Routes
 app.set('views', __dirname + '/views');
 
-app.get('/', (req, res) => {
-  res.send('服务器正常运行');
-});
+app.get('/', (req,res) => {
+    res.redirect('/find');
+})
 
-app.get('/find', (req, res) => {
-  const sampleCourses = [
-    { _id: '1', course_id: 'CS101', course_name: 'Intro to CS' },
-    { _id: '2', course_id: 'MATH101', course_name: 'Calculus I' }
-  ];
-  res.render('list', { course: sampleCourses });
-});
+app.get('/find', (req,res) => {
+    handle_Find(res, req.query.docs);
+})
 
 app.get('/create', (req, res) => {
   res.status(200).render('create', { user: 'demo' });
@@ -155,6 +151,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
