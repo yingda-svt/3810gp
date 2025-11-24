@@ -132,12 +132,6 @@ app.post('/create', (req, res) => {
   handle_Create(req, res);
 });
 
- app.get('/find', (req, res) => {
-   Assuming req.query.docs is the criteria, or empty
-  const criteria = req.query.docs || {};
-  handle_Find(res, criteria);
-});
-
 app.get('/details', (req, res) => {
   handle_Details(res, req.query);
 });
@@ -160,6 +154,7 @@ const port = process.env.PORT || 8099;
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
