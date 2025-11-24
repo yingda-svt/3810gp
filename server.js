@@ -151,8 +151,9 @@ app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
 
-app.all('*', (req, res) => {
+app.all('/(.*)', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
