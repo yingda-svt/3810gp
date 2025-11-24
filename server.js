@@ -1,16 +1,32 @@
-const express = require('express');
-const path = require('path');
-const session = require('express-session');
-const formidable = require('express-formidable');
-const fs = require('fs');
+var 
+	express             = require('express'),
+    app                 = express(),
+    session             = require('express-session'),
+	formidable 			= require('express-formidable'),
+	fsPromises 			= require('fs').promises;
 
-const app = express();
+const path          = require('path');
+const { MongoClient, ObjectId } = require('mongodb');
+const mongourl = 'mongodb+srv://s1404001:14040010@cluster0.llkhaon.mongodb.net/?appName=Cluster0'; // Your MongoDB connection string
+const client = new MongoClient(mongourl);
+const dbName = 'samples_mflix';
+const collectionName = 'comments';
 
-// 資料夾與資料
-const uploadDir = path.join(__dirname, 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir);
+// 中间件配置
+app.set('view engine', 'ejs');
+app.set('views', path.join(__dirname, 'views'));
+app.use(express.static('public'));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+app.use(formidable());
+app.use(session({
+  secret: 'ole-system-secret-key-2025',
+  resave: false,
+  saveUninitialized: false,
+  cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }
+}));
 
-// 模擬資料
+// 模拟数据
 const mockUsers = [
   { user_id: 'student1', password: '123', username: 'Test Student', role: 'student' },
   { user_id: 'teacher1', password: '123', username: 'Test Teacher', role: 'teacher' }
@@ -22,186 +38,268 @@ const mockCourses = [
 ];
 
 const mockAssignments = [
-  { assignment_id: 'ASS001', title: 'Programming Assignment 1', course_name: 'Introduction to Programming', due_date: new Date('2025-12-31') }
+  { 
+    assignment_id: 'ASS001', 
+    title: 'Programming Assignment 1', 
+    course_name: 'Introduction to Programming',
+    due_date: new Date('2025-12-31')
+  }
 ];
 
-const mockSubmissions = [];
+const mockSubmissions = [
+	{
+  submission_id: 'SUB123456',
+  assignment_title: 'Programming Assignment 1',
+  course_name: 'Introduction to Programming',
+  assignment_due_date: new Date('2025-12-31'),
+  submission_date: new Date(),
+  file_path: 'uploads/file1.pdf',
+  file_type: 'application/pdf',
+  file_size: 102400, // bytes
+  grade: null,
+  user_id: 'student1'
+}
+];
 
-// 中介層設定
-app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
-app.use(express.static('public'));
-app.use(express.urlencoded({ extended: true }));
-app.use(formidable());
-
-app.use(session({
-  secret: 'your-secret-key',
-  resave: false,
-  saveUninitialized: false
-}));
-
-// 會員驗證
+// 认证中间件
 const requireLogin = (req, res, next) => {
-  if (req.session.userId) return next();
+  if (req.session.userId) {
+    return next();
+  }
   res.redirect('/login');
 };
 
-// 頁面路由
+// ==================== 页面路由 ====================
+
 app.get('/', (req, res) => {
-  res.redirect('/list');
+  if (req.session.userId) {
+    res.redirect('/dashboard');
+  } else {
+    res.redirect('/login');
+  }
 });
 
-// login
 app.get('/login', (req, res) => {
   res.render('login', { error: null });
 });
+
 app.post('/login', (req, res) => {
   const { user_id, password } = req.fields;
   const user = mockUsers.find(u => u.user_id === user_id && u.password === password);
+  
   if (user) {
     req.session.userId = user.user_id;
     req.session.username = user.username;
     req.session.role = user.role;
     res.redirect('/list');
   } else {
-    res.render('login', { error: 'Invalid user ID or password' });
+    res.render('login', { error: 'userID or password wrong, try  student1/123' });
   }
 });
-app.get('/logout', (req, res) => {
-  req.session.destroy();
-  res.redirect('/login');
-});
 
-// 列表頁
 app.get('/list', requireLogin, (req, res) => {
-  res.render('list', {
+  res.render('list', { 
     user: { user_id: req.session.userId, username: req.session.username },
     course: mockCourses
   });
 });
 
-// 詳細頁（課程）
+// 取得課程詳情，透過 detail.ejs 顯示 submission 資料
 app.get('/detail', requireLogin, (req, res) => {
+  // 可能来自 list.ejs 的兩種參數名稱：_id 或 course_id
   const idParam = req.query._id || req.query.course_id;
+  console.log('detail idParam:', idParam);
+
   let course = mockCourses.find(c => c._id === idParam);
+
   if (!course && idParam) {
     course = mockCourses.find(c => c.course_id === idParam);
   }
-  if (!course) return res.redirect('/info?message=Course not found');
 
-  // 模擬一個提交
-  const submission = {
-    submission_id: 'SUB-' + Date.now(),
-    assignment_title: 'Sample Assignment',
-    course_name: course.course_name,
-    assignment_due_date: new Date('2025-12-31'),
-    submission_date: new Date(),
-    file_path: 'sample.pdf',
-    file_type: 'application/pdf',
-    file_size: 102400,
-    grade: null
-  };
-  res.render('detail', { submission });
-});
-
-// 新增提交（Create）
-app.get('/submissions/create', requireLogin, (req, res) => {
-  res.render('create', { assignments: mockAssignments });
-});
-app.post('/submissions/create', requireLogin, (req, res) => {
-  const { assignmentId } = req.fields;
-  const assignment = mockAssignments.find(a => a.assignment_id === assignmentId);
-  const fileName = req.files && req.files.submissionFile ? req.files.submissionFile.name : 'no-file';
-
-  // 儲存檔案
-  if (req.files && req.files.submissionFile) {
-    const oldPath = req.files.submissionFile.path;
-    const newPath = path.join(uploadDir, fileName);
-    fs.renameSync(oldPath, newPath);
+  if (!course) {
+    return res.redirect('/info?message=Course not found');
   }
 
-  const newSub = {
-    submission_id: 'SUB-' + Date.now(),
-    assignment_id: assignmentId,
-    assignment_title: assignment ? assignment.title : 'Unknown',
-    course_name: assignment ? assignment.course_name : 'Unknown',
-    assignment_due_date: assignment ? assignment.due_date : null,
+  const associatedAssignment = mockAssignments.find(a => a.course_name === course.course_name);
+
+  const submission = {
+    submission_id: 'DET-' + course._id,
+    assignment_title: course.course_name, // 以課程名稱作為標題，視專案需求調整
+    course_name: course.course_name,
+    assignment_due_date: associatedAssignment ? associatedAssignment.due_date : null,
     submission_date: new Date(),
-    file_path: fileName,
-    file_type: req.files.submissionFile ? req.files.submissionFile.type : 'unknown',
-    file_size: req.files.submissionFile ? req.files.submissionFile.size : 0,
+    file_path: 'no-file',
+    file_type: 'unknown',
+    file_size: 0,
     grade: null,
     user_id: req.session.userId
   };
-  mockSubmissions.push(newSub);
-  res.redirect('/info?message=Submission created');
-});
 
-// 我的提交
-app.get('/submissions/my-submissions', requireLogin, (req, res) => {
-  const mySubs = mockSubmissions.filter(s => s.user_id === req.session.userId);
-  res.render('my-submissions', { submissions: mySubs });
+  res.render('detail', { submission: submission });
 });
-
-// 提交詳細（查看）
-app.get('/submissions/detail/:submissionId', requireLogin, (req, res) => {
-  const sub = mockSubmissions.find(s => s.submission_id === req.params.submissionId && s.user_id === req.session.userId);
-  if (sub) res.render('detail', { submission: sub });
-  else res.redirect('/info?message=Submission not found');
-});
-
-// 刪除提交
-app.get('/submissions/delete/:submissionId', requireLogin, (req, res) => {
-  const sub = mockSubmissions.find(s => s.submission_id === req.params.submissionId && s.user_id === req.session.userId);
-  if (sub) res.render('delete', { submission: sub });
-  else res.redirect('/info?message=Submission not found');
-});
-app.post('/submissions/delete', requireLogin, (req, res) => {
-  const { submissionId } = req.fields;
-  const index = mockSubmissions.findIndex(s => s.submission_id === submissionId && s.user_id === req.session.userId);
-  if (index !== -1) {
-    mockSubmissions.splice(index, 1);
-    res.redirect('/info?message=Deleted');
-  } else {
-    res.redirect('/info?message=Deletion failed');
-  }
-});
-
-// 文件下載（示意）
-app.get('/submissions/download/:submissionId', requireLogin, (req, res) => {
-  const sub = mockSubmissions.find(s => s.submission_id === req.params.submissionId && s.user_id === req.session.userId);
-  if (sub && sub.file_path !== 'no-file') {
-    const filePath = path.join(uploadDir, sub.file_path);
-    res.download(filePath);
-  } else {
-    res.redirect('/info?message=File not found');
-  }
-});
-
-// 顯示訊息頁
-app.get('/info', requireLogin, (req, res) => {
-  res.render('info', { message: req.query.message || 'Operation completed' });
-});
-
-// 文件上傳與刪除（你可以加入前述檔案上傳/刪除的路由）
-// 例如：
-app.post('/upload', (req, res) => {
-  if (!req.files || !req.files.file) return res.status(400).send('No file uploaded');
-  const file = req.files.file;
-  const savePath = path.join(uploadDir, file.name);
-  fs.renameSync(file.path, savePath);
-  res.send('File uploaded');
-});
-app.post('/delete-file', (req, res) => {
-  const filename = req.fields.filename;
-  fs.unlink(path.join(uploadDir, filename), err => {
-    if (err) return res.status(500).send('Delete error');
-    res.send('File deleted');
+app.get('/dashboard', requireLogin, (req, res) => {
+  res.render('dashboard', { 
+    user: { 
+      user_id: req.session.userId, 
+      username: req.session.username 
+    }
   });
 });
 
-// 監聽
-const PORT = process.env.PORT || 8099;
-app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+
+app.get('/submissions/create', requireLogin, (req, res) => {
+  res.render('create', { 
+    assignments: mockAssignments,
+    loggedInUser: { user_id: req.session.userId }
+  });
 });
+
+
+
+app.post('/submissions/create', requireLogin, (req, res) => {
+  const { assignmentId, userId } = req.fields;
+  
+  const assignment = mockAssignments.find(a => a.assignment_id === assignmentId);
+  
+  const newSubmission = {
+    submission_id: 'SUB' + Date.now(),
+    assignment_id: assignmentId,
+    user_id: userId,
+    submission_date: new Date(),
+    file_path: req.files.submissionFile ? req.files.submissionFile.name : 'no-file',
+    file_size: req.files.submissionFile ? req.files.submissionFile.size : 0,
+    file_type: 'test',
+    grade: null,
+    assignment_title: assignment ? assignment.title : 'Unknown',
+    course_name: assignment ? assignment.course_name : 'Unknown'
+  };
+  
+  mockSubmissions.push(newSubmission);
+  res.redirect('/info?message=Assignment submitted successfully! submitted ID: ' + newSubmission.submission_id);
+});
+
+app.get('/submissions/my-submissions', requireLogin, (req, res) => {
+  const userSubmissions = mockSubmissions.filter(s => s.user_id === req.session.userId);
+  res.render('my-submissions', { 
+    submissions: userSubmissions,
+    user: { user_id: req.session.userId, username: req.session.username }
+  });
+});
+
+app.get('/submissions/detail/:submissionId', requireLogin, (req, res) => {
+  const submission = mockSubmissions.find(s => 
+    s.submission_id === req.params.submissionId && s.user_id === req.session.userId
+  );
+  
+  if (submission) {
+    res.render('detail', { submission: submission });
+  } else {
+    res.redirect('/info?message=Submission record not found');
+  }
+});
+
+app.get('/submissions/delete/:submissionId', requireLogin, (req, res) => {
+  const submission = mockSubmissions.find(s => 
+    s.submission_id === req.params.submissionId && s.user_id === req.session.userId
+  );
+  
+  if (submission) {
+    res.render('delete', { submission: submission });
+  } else {
+    res.redirect('/info?message=Submission record not found');
+  }
+});
+
+app.post('/submissions/delete', requireLogin, (req, res) => {
+  const { submissionId } = req.fields;
+  const index = mockSubmissions.findIndex(s => 
+    s.submission_id === submissionId && s.user_id === req.session.userId
+  );
+  
+  if (index !== -1) {
+    mockSubmissions.splice(index, 1);
+    res.redirect('/info?message=Delete submission successful');
+  } else {
+    res.redirect('/info?message=Deletion failed: Submission record not found');
+  }
+});
+
+app.get('/info', requireLogin, (req, res) => {
+  const message = req.query.message || 'Operation completed';
+  res.render('info', { message: message });
+});
+
+app.get('/logout', (req, res) => {
+  req.session.destroy();
+  res.redirect('/list');
+});
+// ==================== RESTful API ====================
+
+app.get('/api/assignments', (req, res) => {
+  res.json(mockAssignments);
+});
+
+app.post('/api/assignments', (req, res) => {
+  const newAssignment = {
+    assignment_id: 'ASS' + Date.now(),
+    ...req.fields,
+    created_at: new Date()
+  };
+  mockAssignments.push(newAssignment);
+  res.status(201).json(newAssignment);
+});
+
+app.put('/api/assignments/:id', (req, res) => {
+  const assignment = mockAssignments.find(a => a.assignment_id === req.params.id);
+  if (assignment) {
+    Object.assign(assignment, req.fields);
+    res.json(assignment);
+  } else {
+    res.status(404).json({ error: 'Assignment not found' });
+  }
+});
+
+app.delete('/api/assignments/:id', (req, res) => {
+  const index = mockAssignments.findIndex(a => a.assignment_id === req.params.id);
+  if (index !== -1) {
+    mockAssignments.splice(index, 1);
+    res.json({ message: 'Deletion successful' });
+  } else {
+    res.status(404).json({ error: 'Assignment not found' });
+  }
+});
+
+
+// Start server
+const port = process.env.PORT || 8099;
+app.listen(port, () => {
+  console.log(`Server listening on port ${port}`);
+});
+
+// Use a named parameter for the wildcard
+app.all('/*', (req, res) => {
+  res.status(404).render('info', { message: `${req.path} - Unknown request!` });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
