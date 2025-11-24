@@ -104,19 +104,39 @@ app.get('/list', requireLogin, (req, res) => {
   });
 });
 
+// 取得課程詳情，透過 detail.ejs 顯示 submission 資料
 app.get('/detail', requireLogin, (req, res) => {
-  const courseId = req.query.course_id;
-  console.log('Received course_id:', courseId); // 添加调试输出
+  // 可能来自 list.ejs 的兩種參數名稱：_id 或 course_id
+  const idParam = req.query._id || req.query.course_id;
+  console.log('detail idParam:', idParam);
 
-  const course = mockCourses.find(c => c.course_id === courseId);
-  if (course) {
-    res.render('detail', { course: course });
-  } else {
-    console.log('Course not found for:', courseId);
-    res.redirect('/info?message=Course not found');
+  let course = mockCourses.find(c => c._id === idParam);
+
+  if (!course && idParam) {
+    course = mockCourses.find(c => c.course_id === idParam);
   }
-});
 
+  if (!course) {
+    return res.redirect('/info?message=Course not found');
+  }
+
+  const associatedAssignment = mockAssignments.find(a => a.course_name === course.course_name);
+
+  const submission = {
+    submission_id: 'DET-' + course._id,
+    assignment_title: course.course_name, // 以課程名稱作為標題，視專案需求調整
+    course_name: course.course_name,
+    assignment_due_date: associatedAssignment ? associatedAssignment.due_date : null,
+    submission_date: new Date(),
+    file_path: 'no-file',
+    file_type: 'unknown',
+    file_size: 0,
+    grade: null,
+    user_id: req.session.userId
+  };
+
+  res.render('detail', { submission: submission });
+});
 app.get('/dashboard', requireLogin, (req, res) => {
   res.render('dashboard', { 
     user: { 
@@ -260,6 +280,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
