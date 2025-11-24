@@ -104,15 +104,16 @@ app.get('/list', requireLogin, (req, res) => {
   });
 });
 
-app.get('/submissions/detail/:submissionId', requireLogin, (req, res) => {
-  const submission = mockSubmissions.find(s => 
-    s.submission_id === req.params.submissionId && s.user_id === req.session.userId
-  );
-  
-  if (submission) {
-    res.render('detail', { submission: submission });
+app.get('/detail', requireLogin, (req, res) => {
+  const courseId = req.query.course_id;
+  console.log('Received course_id:', courseId); // 添加调试输出
+
+  const course = mockCourses.find(c => c.course_id === courseId);
+  if (course) {
+    res.render('detail', { course: course });
   } else {
-    res.redirect('/info?message=Submission record not found');
+    console.log('Course not found for:', courseId);
+    res.redirect('/info?message=Course not found');
   }
 });
 
@@ -259,6 +260,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
