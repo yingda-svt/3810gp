@@ -6,7 +6,7 @@
     "dependencies": {
     "ejs": "3.1.10",
     "express": "4.19.2",
-    "express-formidable": "1.2.6",
+    "express-formidable": "*",
     "mongodb": "6.9.0",
     "nodemon": "2.0.22"
 },
@@ -15,6 +15,7 @@
         "start": "node server"
     }
 }
+
 
 
 
