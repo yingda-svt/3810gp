@@ -46,7 +46,20 @@ const mockAssignments = [
   }
 ];
 
-const mockSubmissions = [];
+const mockSubmissions = [
+	{
+  submission_id: 'SUB123456',
+  assignment_title: 'Programming Assignment 1',
+  course_name: 'Introduction to Programming',
+  assignment_due_date: new Date('2025-12-31'),
+  submission_date: new Date(),
+  file_path: 'uploads/file1.pdf',
+  file_type: 'application/pdf',
+  file_size: 102400, // bytes
+  grade: null,
+  user_id: 'student1'
+}
+];
 
 // 认证中间件
 const requireLogin = (req, res, next) => {
@@ -91,14 +104,15 @@ app.get('/list', requireLogin, (req, res) => {
   });
 });
 
-app.get('/detail', requireLogin, (req, res) => {
-  const courseId = req.query.course_id;
-  const course = mockCourses.find(c => c.course_id === courseId);
-
-  if (course) {
-    res.render('detail', { course: course });
+app.get('/submissions/detail/:submissionId', requireLogin, (req, res) => {
+  const submission = mockSubmissions.find(s => 
+    s.submission_id === req.params.submissionId && s.user_id === req.session.userId
+  );
+  
+  if (submission) {
+    res.render('detail', { submission: submission });
   } else {
-    res.redirect('/info?message=Course not found');
+    res.redirect('/info?message=Submission record not found');
   }
 });
 
@@ -245,6 +259,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
