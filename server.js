@@ -113,7 +113,7 @@ const handle_Update = async (req, res) => {
 app.set('views', __dirname + '/views');
 
 app.get('/', (req, res) => {
-  res.redirect('/find');
+  res.send('服务器正常运行');
 });
 
 app.get('/find', (req, res) => {
@@ -154,6 +154,7 @@ const port = process.env.PORT || 8099;
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
