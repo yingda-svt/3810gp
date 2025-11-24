@@ -14,7 +14,7 @@
     <div>
         <h2>My Course</h2>
         <% for (var c of course) { %>
-            <label><a href="/course?_id=<%= c._id %>"><%= course.course_id %> <%= course.course_name %></a>
+            <label><a href="/detail?_id=<%= c._id %>"><%= c.course_id %> <%= c.course_name %></a>
             </label>
             <% } %>
     </form>
@@ -23,6 +23,7 @@
 </body>
 
 </html>
+
 
 
 
