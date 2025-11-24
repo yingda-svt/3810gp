@@ -1,9 +1,3 @@
-const express = require('express');
-const app = express();
-const fs = require('node:fs/promises'); // use fs.promises
-const formidable = require('express-formidable');
-app.use(formidable());
-
 const { MongoClient, ObjectId } = require('mongodb');
 const mongourl = 'mongodb+srv://carolyan360_db_user:01110118@cluster0.55hozbc.mongodb.net/?appName=Cluster0'; // Your MongoDB connection string
 const client = new MongoClient(mongourl);
@@ -150,5 +144,6 @@ const port = process.env.PORT || 8099;
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
