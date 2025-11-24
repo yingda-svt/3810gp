@@ -144,7 +144,6 @@ app.post('/update', (req, res) => {
   handle_Update(req, res);
 });
 
-// Catch-all for unknown routes
 app.all('*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
@@ -154,4 +153,5 @@ const port = process.env.PORT || 8099;
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
