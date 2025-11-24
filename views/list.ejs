@@ -14,8 +14,8 @@
     <div>
         <h2>My Course</h2>
         <% for (var c of mockCourses) { %>
-            <label><a href="/detail?_id=<%= c._id %>"><%= c.course_id %> <%= c.course_name %></a>
-            </label>
+            <li><a href="/detail?_id=<%= c._id %>"><%= c.course_id %> <%= c.course_name %></a>
+            </li>
             <% } %>
     </form>
     </div>
@@ -23,6 +23,7 @@
 </body>
 
 </html>
+
 
 
 
