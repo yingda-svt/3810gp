@@ -5,7 +5,7 @@ const formidable = require('express-formidable');
 app.use(formidable());
 
 const { MongoClient, ObjectId } = require('mongodb');
-const mongourl = 'mongosh "mongodb+srv://cluster0.llkhaon.mongodb.net/" --apiVersion 1 --username s1404001'; // Your MongoDB connection string
+const mongourl = 'mongodb+srv://carolyan360_db_user:01110118@cluster0.55hozbc.mongodb.net/?appName=Cluster0'; // Your MongoDB connection string
 const client = new MongoClient(mongourl);
 const dbName = 'samples_mflix';
 const collectionName = 'comments';
@@ -231,6 +231,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
