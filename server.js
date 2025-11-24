@@ -84,52 +84,13 @@ app.post('/login', (req, res) => {
   }
 });
 
-/* create.ejs
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <title>Upload Homework Submission</title>
-</head>
-<body>
-    <h1>Upload Homework Submission</h1>
-    <form action="/submissions/create" method="POST" enctype="multipart/form-data">
-        <!-- Select Assignment (linked to Course via assignment_id in Database) -->
-        <p>
-            <label for="assignmentId">Select Assignment:</label>
-            <select name="assignmentId" id="assignmentId" required>
-                <% if (assignments && assignments.length > 0) { %>
-                    <% assignments.forEach(assignment => { %>
-                        <option value="<%= assignment.assignment_id %>">
-                            <%= assignment.title %> (Course: <%= assignment.course_name %> | Due: <%= new Date(assignment.due_date).toLocaleDateString() %>)
-                        </option>
-                    <% }) %>
-                <% } else { %>
-                    <option disabled>No assignments available for your courses</option>
-                <% } %>
-            </select>
-        </p>
-
-        <!-- Upload Submission File -->
-        <p>
-            <label for="submissionFile">Upload Homework File:</label>
-            <input type="file" name="submissionFile" id="submissionFile" accept=".pdf,.doc,.docx,.txt,.jpg,.png" required>
-            <br>
-            <small>Supported formats: PDF, Word, TXT, Images (Max size: 10MB)</small>
-        </p>
-
-        <!-- Hidden Fields: Link to Logged-in User & Auto-set Submission Date (handled by backend) -->
-        <input type="hidden" name="userId" value="<%= loggedInUser.user_id %>">
-        <button type="submit">Submit Homework</button>
-    </form>
-    <p><a href="/dashboard">Back to Student Dashboard</a></p>
-</body>
-</html>*/
-
-app.get('/logout', (req, res) => {
-  req.session.destroy();
-  res.redirect('/login');
+app.get('/list', requireLogin, (req, res) => {
+  res.render('list', { 
+    user: { user_id: req.session.userId, username: req.session.username },
+    course: mockCourses
+  });
 });
+
 
 app.get('/dashboard', requireLogin, (req, res) => {
   res.render('dashboard', { 
@@ -140,12 +101,6 @@ app.get('/dashboard', requireLogin, (req, res) => {
   });
 });
 
-app.get('/list', requireLogin, (req, res) => {
-  res.render('list', { 
-    user: { user_id: req.session.userId, username: req.session.username },
-    course: mockCourses
-  });
-});
 
 app.get('/submissions/create', requireLogin, (req, res) => {
   res.render('create', { 
@@ -153,6 +108,8 @@ app.get('/submissions/create', requireLogin, (req, res) => {
     loggedInUser: { user_id: req.session.userId }
   });
 });
+
+
 
 app.post('/submissions/create', requireLogin, (req, res) => {
   const { assignmentId, userId } = req.fields;
@@ -227,6 +184,10 @@ app.get('/info', requireLogin, (req, res) => {
   res.render('info', { message: message });
 });
 
+app.get('/logout', (req, res) => {
+  req.session.destroy();
+  res.redirect('/login');
+});
 // ==================== RESTful API ====================
 
 app.get('/api/assignments', (req, res) => {
@@ -274,6 +235,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
