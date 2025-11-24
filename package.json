@@ -1,5 +1,3 @@
-npm install
-npm start
 {
     "name": "server",
     "description": "MVC Booking Project Demo",
@@ -17,5 +15,6 @@ npm start
         "start": "node server.js"
     }
 }
+
 
 
