@@ -24,7 +24,6 @@
     <p><strong>Grade:</strong> <%= submission.grade || "Your submission is pending grading" %></p>
 
     <p>
-        <a href="/submissions/download/<%= submission.submission_id %>">Download Submitted File</a> |
         <a href="/submissions/delete/<%= submission.submission_id %>">Delete This Submission</a>
         <a href="/submissions/create/<%= submission.submission_id %>">upload This Submission</a>
     </p>
