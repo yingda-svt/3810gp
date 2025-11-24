@@ -13,7 +13,7 @@
     <form action="/list" method="POST">
     <div>
         <h2>My Course</h2>
-        <% for (var c of <%mockCourses%>) { %>
+        <% for (var c of <%course%>) { %>
             <li><a href="/detail?_id=<%= c._id %>"><%= c.course_id %> <%= c.course_name %></a>
             </li>
             <% } %>
@@ -23,6 +23,7 @@
 </body>
 
 </html>
+
 
 
 
