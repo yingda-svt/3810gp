@@ -112,7 +112,7 @@ const handle_Update = async (req, res) => {
 
 // Routes
 app.get('/', (req, res) => {
-  res.redirect('/find');
+  res.send('Hello, server is running!');
 });
 
 app.get('/find', (req, res) => {
@@ -159,6 +159,7 @@ const port = process.env.PORT || 8099;
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
