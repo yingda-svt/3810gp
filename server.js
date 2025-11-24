@@ -11,6 +11,7 @@ app.set('view engine', 'ejs');
 
 // 根路径，测试服务器是否正常
 app.get('/', (req, res) => {
+  console.log('收到根路由請求');
   res.send('服务器正常运行');
 });
 
@@ -56,3 +57,4 @@ const port = process.env.PORT || 8099;
 app.listen(port, () => {
   console.log(`服务器监听端口 ${port}`);
 });
+
