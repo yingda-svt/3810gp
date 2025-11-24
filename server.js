@@ -1,4 +1,6 @@
-var express             = require('express'),
+var 
+    const path          = require('path');
+	express             = require('express'),
     app                 = express(),
     session             = require('express-session'),
 	formidable 			= require('express-formidable'),
@@ -230,6 +232,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
