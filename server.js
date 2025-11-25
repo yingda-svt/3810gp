@@ -121,6 +121,14 @@ app.get('/logout', (req, res) => {
   });
 });
     
+   req.session.save(err => {
+      if (err) console.error('Session save error:', err);
+      res.redirect('/list');
+    });
+  } else {
+    res.render('login', { error: 'User ID or password incorrect' });
+  }
+});
 
 // 路由：學生課程列表
 app.get('/list', requireLogin, async (req, res) => {
@@ -260,6 +268,7 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
