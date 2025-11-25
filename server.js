@@ -124,31 +124,33 @@ app.get('/logout', (req, res) => {
 
 // 路由：學生課程列表
 app.get('/list', requireLogin, async (req, res) => {
-  try {
-    const userId = req.session.userId;
-    const userDoc = await db.collection('datebase_user').findOne({ user_id: userId });
-    let courseIds = [];
-    if (Array.isArray(userDoc?.course_id)) {
-      courseIds = userDoc.course_id;
-    } else if (typeof userDoc?.course_id === 'string') {
-      courseIds = [userDoc.course_id];
-    }
-    courseIds = Array.from(new Set(courseIds));
-    const courses = courseIds.length > 0
-      ? await db.collection('datebase_course').find({ course_id: { $in: courseIds } }).toArray()
-      : [];
-    const username = req.session.username;
-    res.render('list', {
-      user: {
-        user_id: userId,
-        username: username
-      },
-      course: courses
-    });
-  } catch (err) {
-    console.error(err);
-    res.status(500).send('Server error');
+  const userId = req.session.userId;
+  const userDoc = await db.collection('database_user').findOne({ user_id: userId });
+
+  // 預防 course 欄位不是陣列的情況
+  let coursesIdArray;
+  if (Array.isArray(userDoc?.course)) {
+    coursesIdArray = userDoc.course;
+  } else if (userDoc?.course != null) {
+    coursesIdArray = [userDoc.course];
+  } else {
+    coursesIdArray = [];
   }
+
+  // 若沒有課程，直接回傳空清單
+  const courses = coursesIdArray.length > 0
+    ? await db.collection('database_course').find({ course_id: { $in: coursesIdArray } }).toArray()
+    : [];
+
+  const username = req.session.username;
+
+  res.render('list', {
+    user: {
+      user_id: userId,
+      username: username
+    },
+    course: courses
+  });
 });
 
 
@@ -258,6 +260,7 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
