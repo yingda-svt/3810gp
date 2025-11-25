@@ -133,11 +133,12 @@ app.get('/list', requireLogin, async (req, res) => {
   let coursesIdArray = [];
   if (Array.isArray(userDoc?.course_id)) {
     coursesIdArray = userDoc.course_id;
-  } else if (userDoc?.course_id != null) {
+  } else if (typeof userDoc?.course_id === 'string') {
+    // 只有單一字串時，轉成陣列
     coursesIdArray = [userDoc.course_id];
   }
 
-  // 去除重複
+  // 移除可能的重複值
   coursesIdArray = Array.from(new Set(coursesIdArray));
 
   // 查詢 datebase_course，course_id 是字串欄位
@@ -281,6 +282,7 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
