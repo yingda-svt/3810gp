@@ -1,11 +1,15 @@
+import express from 'express';
 import session from 'express-session';
 import formidable from 'express-formidable';
 import { promises as fsPromises } from 'fs';
 import { MongoClient, ObjectId } from 'mongodb';
-import express from 'express';
 import path from 'path';
+import { fileURLToPath } from 'url';
+
 const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const __dirname = path.dirname(__filename);
+
+const app = express(); // <-- 加在這裡
 
 // 其他程式碼...
 
@@ -329,6 +333,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
