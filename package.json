@@ -1,5 +1,6 @@
 {
     "name": "server",
+    "type": "commonjs",
     "description": "MVC Booking Project Demo",
     "author": "Cloud381 Instructor",
     "version": "0.0.1",
@@ -16,6 +17,7 @@
         "start": "node server"
     }
 }
+
 
 
 
