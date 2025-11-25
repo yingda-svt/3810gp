@@ -18,9 +18,9 @@ app.use(formidable());
 mongodb ^6.9: https://www.npmjs.com/package/mongodb
 */
 const { MongoClient, ObjectId } = require("mongodb");
-const mongourl = '';
+const mongourl = 'mongodb+srv://carolyan360_db_user:01110118@cluster0.55hozbc.mongodb.net/?appName=Cluster0';
 const client = new MongoClient(mongourl); 
-const dbName = 'project_samples';
+const dbName = '3810sample';
 const collectionName = "bookings";
 
 // Views
@@ -236,4 +236,5 @@ app.get('/{*splat}', (req,res) => {
 })
 
 app.listen(app.listen(process.env.PORT || 8099));
+
 
