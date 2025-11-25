@@ -86,19 +86,30 @@ app.get('/login', (req, res) => {
   res.render('login', { error: null });
 });
 
-app.post('/login', (req, res) => {
+app.post('/login', async (req, res) => {
   const { user_id, password } = req.fields;
-  const user = mockUsers.find(u => u.user_id === user_id && u.password === password);
-  
-  if (user) {
-    req.session.userId = user.user_id;
-    req.session.username = user.username;
-    req.session.role = user.role;
-    res.redirect('/list');
-  } else {
-    res.render('login', { error: 'userID or password wrong, try  student1/123' });
+
+  try {
+    // 從資料庫取得該 user_id 的資料
+    const user = await db.collection('user').findOne({ user_id: user_id });
+    
+    if (user && user.password === password) {
+      // 驗證成功，設定 session
+      req.session.userId = user.user_id;
+      req.session.username = user.username;
+      req.session.role = user.role;
+      
+      res.redirect('/login'); // 或其他頁面
+    } else {
+      // 驗證失敗
+      res.render('login', { error: 'User ID or password incorrect' });
+    }
+  } catch (err) {
+    console.error('Error during login:', err);
+    res.render('login', { error: 'An error occurred. Please try again.' });
   }
 });
+  
 
 app.get('/dashboard', requireLogin, (req, res) => {
   res.render('dashboard', { 
@@ -293,6 +304,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
