@@ -1,3 +1,4 @@
+
 const express = require('express');
 const session = require('express-session');
 const formidable = require('express-formidable');
@@ -103,64 +104,6 @@ app.post('/login', async (req, res) => {
     req.session.username = user.username;
     req.session.role = user.role;
 
-// 路由：登出
-app.get('/logout', (req, res) => {
-  req.session.destroy(() => {
-    res.redirect('/login');
-  });
-});
-    
-// 確保 session 寫入完成再導向
-    req.session.save((err) => {
-      if (err) {
-        console.error('Session save error:', err);
-      }
-      res.redirect('/list');
-    });
-  } else {
-    res.render('login', { error: 'User ID or password incorrect' });
-  }
-});
-
-// 路由：學生課程列表
-app.get('/list', requireLogin, async (req, res) => {
-  const userId = req.session.userId;
-  const userDoc = await db.collection('database_user').findOne({ user_id: userId });
-
-  // 預防 course 欄位不是陣列的情況
-  let coursesIdArray;
-  if (Array.isArray(userDoc?.course)) {
-    coursesIdArray = userDoc.course;
-  } else if (userDoc?.course != null) {
-    coursesIdArray = [userDoc.course];
-  } else {
-    coursesIdArray = [];
-  }
-
-  // 若沒有課程，直接回傳空清單
-  const courses = coursesIdArray.length > 0
-    ? await db.collection('database_course').find({ course_id: { $in: coursesIdArray } }).toArray()
-    : [];
-
-  const username = req.session.username;
-
-  res.render('list', {
-    user: {
-      user_id: userId,
-      username: username
-    },
-    course: courses
-  });
-});
-
-app.post('/login', async (req, res) => {
-  const { user_id, password } = req.fields;
-  const user = await db.collection('database_user').findOne({ user_id });
-  if (user && user.password === password) {
-    req.session.userId = user.user_id;
-    req.session.username = user.username;
-    req.session.role = user.role;
-
     // 確保 session 儲存完再跳轉
     req.session.save(err => {
       if (err) console.error('Session save error:', err);
@@ -170,6 +113,44 @@ app.post('/login', async (req, res) => {
     res.render('login', { error: 'User ID or password incorrect' });
   }
 });
+
+// 路由：登出
+app.get('/logout', (req, res) => {
+  req.session.destroy(() => {
+    res.redirect('/login');
+  });
+});
+    
+
+// 路由：學生課程列表
+app.get('/list', requireLogin, async (req, res) => {
+  try {
+    const userId = req.session.userId;
+    const userDoc = await db.collection('datebase_user').findOne({ user_id: userId });
+    let courseIds = [];
+    if (Array.isArray(userDoc?.course_id)) {
+      courseIds = userDoc.course_id;
+    } else if (typeof userDoc?.course_id === 'string') {
+      courseIds = [userDoc.course_id];
+    }
+    courseIds = Array.from(new Set(courseIds));
+    const courses = courseIds.length > 0
+      ? await db.collection('datebase_course').find({ course_id: { $in: courseIds } }).toArray()
+      : [];
+    const username = req.session.username;
+    res.render('list', {
+      user: {
+        user_id: userId,
+        username: username
+      },
+      course: courses
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
+  }
+});
+
 
 // 路由：課程詳細
 app.get('/detail', requireLogin, async (req, res) => {
@@ -277,6 +258,13 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
+
+
+
+
+
+
 
 
 
