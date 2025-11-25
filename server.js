@@ -125,23 +125,27 @@ app.get('/logout', (req, res) => {
 // 路由：學生課程列表
 app.get('/list', requireLogin, async (req, res) => {
   const userId = req.session.userId;
-  const userDoc = await db.collection('database_user').findOne({ user_id: userId });
 
-  // 預防 course 欄位不是陣列的情況
-  let coursesIdArray;
-  if (Array.isArray(userDoc?.course)) {
-    coursesIdArray = userDoc.course;
-  } else if (userDoc?.course != null) {
-    coursesIdArray = [userDoc.course];
-  } else {
-    coursesIdArray = [];
+  // 從 datebase_user 撈使用者資料
+  const userDoc = await db.collection('datebase_user').findOne({ user_id: userId });
+
+  // 取得並確保 course_id 是陣列
+  let coursesIdArray = [];
+  if (Array.isArray(userDoc?.course_id)) {
+    coursesIdArray = userDoc.course_id;
+  } else if (userDoc?.course_id != null) {
+    coursesIdArray = [userDoc.course_id];
   }
 
-  // 若沒有課程，直接回傳空清單
+  // 去除重複
+  coursesIdArray = Array.from(new Set(coursesIdArray));
+
+  // 查詢 datebase_course，course_id 是字串欄位
   const courses = coursesIdArray.length > 0
-    ? await db.collection('database_course').find({ course_id: { $in: coursesIdArray } }).toArray()
+    ? await db.collection('datebase_course').find({ course_id: { $in: coursesIdArray } }).toArray()
     : [];
 
+  // 從 session 取得使用者名稱
   const username = req.session.username;
 
   res.render('list', {
@@ -277,6 +281,7 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
