@@ -9,17 +9,18 @@
     <hr/>
     <h2>Your user ID is <%= user.user_id %></h2>
     <h2>Your username is <%= user.username %></h2>
-   <h2>Your Courses:</h2>
-<ul>
-  <% if (course && course.length > 0) { %>
-    <% course.forEach(function(c) { %>
-      <li><%= c.course_id %> - <%= c.course_name %></li>
-    <% }); %>
-  <% } else { %>
-    <li>No courses found.</li>
-  <% } %>
-</ul>
-    <p><a href='/logout'>Logout</a></p>
+
+    <h2>Your Courses:</h2>
+    <ul>
+      <% if (course && course.length > 0) { %>
+        <% course.forEach(function(id) { %>
+          <li><%= id %></li>
+        <% }); %>
+      <% } else { %>
+        <li>No courses found.</li>
+      <% } %>
+    </ul>
+
+    <p><a href="/logout">Logout</a></p>
 </body>
 </html>
-
