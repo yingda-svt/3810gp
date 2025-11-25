@@ -1,4 +1,5 @@
 
+
 const express = require('express');
 const session = require('express-session');
 const formidable = require('express-formidable');
@@ -171,11 +172,14 @@ app.get('/detail', requireLogin, async (req, res) => {
 
   try {
     // 取得該課程的所有作業
-    const assignments = await db.collection('3810gp.datebase_assignment').find({ course_id: courseId }).toArray();
-res.render('detail', {
-  course: { course_id: courseId },
-  assignments: assignments
-});
+    const assignments = await db
+      .collection('database_assignment')
+      .find({ course_id: courseId })
+      .toArray();
+
+    res.render('detail', {
+      course_id: courseId,
+      assignments
     });
   } catch (err) {
     console.error('Error in /detail:', err);
@@ -183,6 +187,12 @@ res.render('detail', {
   }
 });
 
+// 路由：上傳作業頁面
+app.get('/submissions/create/:assignment_id', requireLogin, async (req, res) => {
+  const assignmentId = req.params.assignment_id;
+  const assignment = await db.collection('database_assignment').findOne({ _id: ObjectId(assignmentId) });
+  res.render('create', { assignment, loggedInUser: { user_id: req.session.userId } });
+});
 
 // 路由：提交作業
 app.post('/submissions/create', requireLogin, async (req, res) => {
@@ -194,13 +204,13 @@ app.post('/submissions/create', requireLogin, async (req, res) => {
   }
 
   const uploadDir = path.join(__dirname, 'public/uploads');
-  const filename = Date.now() + '-' + file.name;
+  const filename = Date.now() + '-' + file.name; // 避免覆蓋
   const newPath = path.join(uploadDir, filename);
   await fsPromises.rename(file.path, newPath);
 
-  await db.collection('database_submission').insertOne({
+  await db.collection('datebase_submission').insertOne({
+    submission_id: new ObjectId(),
     assignment_id: assignmentId,
-    course_id: req.query.course_id, // 可傳遞或在前端傳入
     user_id: userId,
     submission_date: new Date(),
     file_path: '/uploads/' + filename,
@@ -208,23 +218,36 @@ app.post('/submissions/create', requireLogin, async (req, res) => {
     file_size: file.size,
     grade: null
   });
-  res.redirect('/detail?course_id=' + req.query.course_id);
+  res.redirect('/info?message=Submission successful');
+});
+
+// 路由：我的提交
+app.get('/submissions/my-submissions', requireLogin, async (req, res) => {
+  const userId = req.session.userId;
+  const submissions = await db.collection('datebase_submission').find({ user_id: userId }).toArray();
+  res.render('my-submissions', { submissions, user: { user_id: userId, username: req.session.username } });
+});
+
+// 路由：單一提交細節
+app.get('/submissions/detail/:submissionId', requireLogin, async (req, res) => {
+  const subId = req.params.submissionId;
+  const submission = await db.collection('datebase_submission').findOne({ _id: ObjectId(subId), user_id: req.session.userId });
+  if (!submission) return res.redirect('/info?message=Submission not found');
+  res.render('detail', { submission });
 });
 
 // 路由：刪除提交
+app.get('/submissions/delete/:submission_id', requireLogin, async (req, res) => {
+  const subId = req.params.submission_id;
+  const submission = await db.collection('datebase_submission').findOne({ _id: ObjectId(subId), user_id: req.session.userId });
+  if (!submission) return res.redirect('/info?message=Submission not found');
+  res.render('delete', { submission });
+});
+
 app.post('/submissions/delete', requireLogin, async (req, res) => {
   const { submissionId } = req.fields;
-  // 先找出要刪除的檔案路徑
-  const sub = await db.collection('database_submission').findOne({ _id: ObjectId(submissionId) });
-  if (!sub) {
-    return res.redirect('/info?message=Submission not found');
-  }
-  // 刪除檔案
-  const filePath = path.join(__dirname, 'public', sub.file_path);
-  await fsPromises.unlink(filePath).catch(() => {});
-  // 刪除資料庫記錄
-  await db.collection('database_submission').deleteOne({ _id: ObjectId(submissionId) });
-  res.redirect('/detail?course_id=' + req.query.course_id);
+  await db.collection('datebase_submission').deleteOne({ _id: ObjectId(submissionId), user_id: req.session.userId });
+  res.redirect('/info?message=Submission deleted');
 });
 
 // 顯示訊息
@@ -274,29 +297,5 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
