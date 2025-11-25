@@ -5,18 +5,19 @@
     "author": "Cloud381 Instructor",
     "version": "0.0.1",
    "dependencies": {
-  "ejs": "3.1.10",
-  "express": "4.19.2",
+  "ejs": "*",
+  "express": "*",
   "express-formidable": "*",
-  "mongodb": "6.9.0",
-  "nodemon": "2.0.22",
-  "express-session": "^1.17.3"
+  "mongodb": "*",
+  "nodemon": "*",
+  "express-session": "*"
 },
     "engine": "node >= 16.0.0",
     "scripts": {
         "start": "node server"
     }
 }
+
 
 
 
