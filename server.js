@@ -125,12 +125,22 @@ app.get('/logout', (req, res) => {
 // 路由：學生課程列表
 app.get('/list', requireLogin, async (req, res) => {
   const userId = req.session.userId;
-  const username = req.session.username; // 從 session 取得
   const userDoc = await db.collection('database_user').findOne({ user_id: userId });
+  
+  // 取得學生名字
+  const username = req.session.username; // 從 session 讀取
+  
+  // 取得學生的課程清單
   const coursesIdArray = userDoc ? userDoc.course : [];
   const courses = await db.collection('database_course').find({ course_id: { $in: coursesIdArray } }).toArray();
 
-  res.render('list', { username, courses });
+  res.render('list', {
+    user: {
+      user_id: userId,
+      username: username
+    },
+    course: courses
+  });
 });
 
 app.post('/login', async (req, res) => {
@@ -257,6 +267,7 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
