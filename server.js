@@ -126,13 +126,23 @@ app.get('/logout', (req, res) => {
 app.get('/list', requireLogin, async (req, res) => {
   const userId = req.session.userId;
   const userDoc = await db.collection('database_user').findOne({ user_id: userId });
-  
-  // 取得學生名字
-  const username = req.session.username; // 從 session 讀取
-  
-  // 取得學生的課程清單
-  const coursesIdArray = userDoc ? userDoc.course : [];
-  const courses = await db.collection('database_course').find({ course_id: { $in: coursesIdArray } }).toArray();
+
+  // 預防 course 欄位不是陣列的情況
+  let coursesIdArray;
+  if (Array.isArray(userDoc?.course)) {
+    coursesIdArray = userDoc.course;
+  } else if (userDoc?.course != null) {
+    coursesIdArray = [userDoc.course];
+  } else {
+    coursesIdArray = [];
+  }
+
+  // 若沒有課程，直接回傳空清單
+  const courses = coursesIdArray.length > 0
+    ? await db.collection('database_course').find({ course_id: { $in: coursesIdArray } }).toArray()
+    : [];
+
+  const username = req.session.username;
 
   res.render('list', {
     user: {
@@ -267,6 +277,7 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
