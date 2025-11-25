@@ -1,12 +1,9 @@
-<!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <title>Information</title>
-</head>
-<body>
-    <b><%= message %></b>
-    <p><a href="/login">Home</a></p>
-</body>
+    <body>
+		<H1>Welcome, <%= user.name %></H1>
+		<hr/>
+		<p>You logged in through <b><%= user.type %></b>, user ID is <%= user.id %></p>
+        <b><%= message %></b>
+        <p><a href="/">home</a></p>
+    </body>
 </html>
-
