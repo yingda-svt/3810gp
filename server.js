@@ -3,15 +3,14 @@ import session from 'express-session';
 import formidable from 'express-formidable';
 import { promises as fsPromises } from 'fs';
 import path from 'path';
-import { dirname } from 'path';
+import { MongoClient, ObjectId } from 'mongodb';
 import { fileURLToPath } from 'url';
-
+import { dirname } from 'path';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
 // 其他程式碼...
-const path          = require('path');
-const { MongoClient, ObjectId } = require('mongodb');
+
 const mongourl = 'mongodb+srv://carolyan360_db_user:01110118@cluster0.55hozbc.mongodb.net/?appName=Cluster0'; // Your MongoDB connection string
 const client = new MongoClient(mongourl);
 const dbName = '3810gp';
@@ -332,6 +331,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
