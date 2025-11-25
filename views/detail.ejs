@@ -1,42 +1,33 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8" />
-    <title>Assignment Details - <%= course.course_id %></title>
+  <meta charset="UTF-8" />
+  <title>Assignments for Course <%= course.course_id %></title>
 </head>
 <body>
-    <h1>Assignment: <%= assignment.title %></h1>
-    <p>Due Date: <%= new Date(assignment.due_date).toLocaleString() %></p>
+  <h1>Assignments for Course <%= course.course_id %></h1>
 
-    <h2>Your Submission</h2>
-    <% if (submission) { %>
-        <p>Submitted on: <%= new Date(submission.submission_date).toLocaleString() %></p>
-        <p>File: <a href="<%= submission.file_path %>" target="_blank">Download</a></p>
-        <p>File Type: <%= submission.file_type %></p>
-        <p>File Size: 
-            <% 
-                const sizeKB = (submission.file_size / 1024).toFixed(2);
-                const sizeMB = (sizeKB / 1024).toFixed(2);
-                const displaySize = sizeMB >= 1 ? `${sizeMB} MB` : `${sizeKB} KB`;
-            %>
-            <%= displaySize %>
-        </p>
-        <!-- 刪除提交 -->
-        <form action="/submissions/delete" method="POST" style="display:inline;">
-            <input type="hidden" name="submissionId" value="<%= submission._id %>" />
-            <button type="submit" onclick="return confirm('Are you sure to delete this submission?');">Delete Submission</button>
-        </form>
-    <% } else { %>
-        <p>No submission yet.</p>
-        <!-- 上傳檔案表單 -->
-        <form action="/submissions/create" method="POST" enctype="multipart/form-data">
-            <input type="hidden" name="assignmentId" value="<%= assignment._id %>" />
-            <input type="hidden" name="userId" value="<%= user.user_id %>" />
-            <input type="file" name="submissionFile" required />
-            <button type="submit">Upload Submission</button>
-        </form>
-    <% } %>
+  <% if (assignments && assignments.length > 0) { %>
+    <table border="1" cellpadding="8" cellspacing="0">
+      <tr>
+        <th>Assignment ID</th>
+        <th>Title</th>
+        <th>Due Date</th>
+        <th>Status</th>
+      </tr>
+      <% assignments.forEach(function(a) { %>
+        <tr>
+          <td><%= a.assignment_id %></td>
+          <td><%= a.title %></td>
+          <td><%= new Date(a.due_date).toLocaleString() %></td>
+          <td><%= a.status %></td>
+        </tr>
+      <% }); %>
+    </table>
+  <% } else { %>
+    <p>No assignments found for this course.</p>
+  <% } %>
 
-    <p><a href="/list">Back to list</a></p>
+  <p><a href="/list">Back to Course List</a></p>
 </body>
 </html>
