@@ -14,13 +14,24 @@ const dbName = '3810gp';
 const collectionuser = 'database_user';
 const collectioncourse = 'database_course';
 const collectionasm = 'database_assignment';
-const collectionsub = 'datebase_submission'; // 你之前打錯了，改正
+const collectionsub = 'datebase_submission'; 
+
+
 
 let db;
 client.connect().then(() => {
   db = client.db(dbName);
   console.log('MongoDB connected');
 });
+
+const userDoc = await db.collection('database_user').findOne({ user_id: userId });
+let userCourses = [];
+if (userDoc && userDoc.course) {
+  userCourses = Array.isArray(userDoc.course) ? userDoc.course : [userDoc.course];
+}
+const courses = await db.collection('database_course')
+  .find({ course_id: { $in: userCourses } })
+  .toArray();
 
 // 設定 EJS
 app.set('view engine', 'ejs');
@@ -206,5 +217,6 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Not Found` });
 });
+
 
 
