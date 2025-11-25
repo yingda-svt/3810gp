@@ -11,10 +11,10 @@
     <ul>
       <% assignments.forEach(function(a) { %>
         <li>
-          <p><strong>ID:</strong> <%= a.assignment_id %> &nbsp;</p>
-          <p><strong>Course ID:</strong> <%= a.course_id %> &nbsp;</p>
-          <p><strong>Title:</strong> <%= a.title %> &nbsp;</p>
-          <p><strong>Due Date:</strong> <%= new Date(a.due_date).toLocaleString() %></p>
+          <p><strong>ID:</strong> <%= a.assignment_id %> &nbsp;</p></li>
+          <li><p><strong>Course ID:</strong> <%= a.course_id %> &nbsp;</p></li>
+          <li><p><strong>Title:</strong> <%= a.title %> &nbsp;</p></li>
+          <li><p><strong>Due Date:</strong> <%= new Date(a.due_date).toLocaleString() %></p>
         </li>
       <% }); %>
     </ul>
