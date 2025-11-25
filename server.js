@@ -22,14 +22,18 @@ const collectionuser = 'database_user';
 const collectionsub = 'datebase_submission';
 let db;
 
-client.connect()
-  .then(() => {
-    db = client.db('3810gp'); // 替換成你的資料庫名稱
-    console.log('MongoDB connected');
-  })
-  .catch(err => {
-    console.error('MongoDB connection error:', err);
+// 在連線成功後，啟動伺服器
+client.connect().then(() => {
+  db = client.db(dbName);
+  console.log('MongoDB connected');
+
+  // 啟動伺服器
+  app.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
   });
+}).catch(err => {
+  console.error('MongoDB connection error:', err);
+});
 // 中间件配置
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -323,16 +327,12 @@ app.delete('/api/assignments/:id', (req, res) => {
 });
 
 
-// Start server
-const port = process.env.PORT || 8099;
-app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
-});
 
 // Use a named parameter for the wildcard
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
