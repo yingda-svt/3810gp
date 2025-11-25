@@ -7,7 +7,7 @@ var
 
 const path          = require('path');
 const { MongoClient, ObjectId } = require('mongodb');
-const mongourl = 'mongodb+srv://s1404001:14040010@cluster0.llkhaon.mongodb.net/?appName=Cluster0'; // Your MongoDB connection string
+const mongourl = 'mongodb+srv://carolyan360_db_user:01110118@cluster0.55hozbc.mongodb.net/?appName=Cluster0'; // Your MongoDB connection string
 const client = new MongoClient(mongourl);
 const dbName = 'samples_mflix';
 const collectionName = 'comments';
@@ -320,6 +320,7 @@ app.delete('/api/assignments/:id', (req, res) => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
