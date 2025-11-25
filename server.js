@@ -11,7 +11,7 @@ const { MongoClient, ObjectId } = require('mongodb');
   await client.connect();
   db = client.db(dbName);
   console.log('MongoDB connected');
-
+})();
 
 const app = express();
 
@@ -218,6 +218,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Not Found` });
 });
+
 
 
 
