@@ -1,16 +1,9 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="UTF-8" />
-  <title>Assignments for Course <%= course.course_id %></title>
-</head>
-<body>
-  <h1>Assignments for Course <%= course.course_id %></h1>
-
+<!DOCTYPE html> <html> <head> <meta charset="UTF-8" /> <title>Assignments for Course <%= course.course_id %></title> </head> <body> <h1>Assignments for Course <%= course.course_id %></h1>
   <% if (assignments && assignments.length > 0) { %>
     <table border="1" cellpadding="8" cellspacing="0">
       <tr>
         <th>Assignment ID</th>
+        <th>Course ID</th>
         <th>Title</th>
         <th>Due Date</th>
         <th>Status</th>
@@ -18,6 +11,7 @@
       <% assignments.forEach(function(a) { %>
         <tr>
           <td><%= a.assignment_id %></td>
+          <td><%= a.course_id %></td>
           <td><%= a.title %></td>
           <td><%= new Date(a.due_date).toLocaleString() %></td>
           <td><%= a.status %></td>
@@ -28,6 +22,4 @@
     <p>No assignments found for this course.</p>
   <% } %>
 
-  <p><a href="/list">Back to Course List</a></p>
-</body>
-</html>
+<p><a href="/list">Back to Course List</a></p> </body> </html>
