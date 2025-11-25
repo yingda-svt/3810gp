@@ -91,7 +91,7 @@ app.post('/login', async (req, res) => {
 
   try {
     // 從資料庫取得該 user_id 的資料
-    const user = await db.collection('user').findOne({ user_id: user_id });
+    const user = await db.collection(collectionuser).findOne({ user_id: user_id });
     
     if (user && user.password === password) {
       // 驗證成功，設定 session
@@ -303,6 +303,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
