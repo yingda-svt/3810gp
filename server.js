@@ -10,7 +10,6 @@ const { MongoClient, ObjectId } = require('mongodb');
 
 const __filename = __filename; // 這在 CommonJS 裡已預設
 const __dirname = path.dirname(__filename);
-// 其他程式碼...
 
 const mongourl = 'mongodb+srv://carolyan360_db_user:01110118@cluster0.55hozbc.mongodb.net/?appName=Cluster0'; // Your MongoDB connection string
 const client = new MongoClient(mongourl);
@@ -318,6 +317,7 @@ app.delete('/api/assignments/:id', (req, res) => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
