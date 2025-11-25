@@ -1,8 +1,15 @@
 import { fileURLToPath } from 'url';
 import path from 'path';
+import { MongoClient, ObjectId } from 'mongodb';
+import express from 'express';
+import session from 'express-session';
+import formidable from 'express-formidable';
+import { promises as fsPromises } from 'fs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+const app = express();
 
 const mongourl = 'mongodb+srv://carolyan360_db_user:01110118@cluster0.55hozbc.mongodb.net/?appName=Cluster0'; // Your MongoDB connection string
 const client = new MongoClient(mongourl);
@@ -310,6 +317,7 @@ app.delete('/api/assignments/:id', (req, res) => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
