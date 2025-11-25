@@ -11,14 +11,14 @@ app.set('view engine', 'ejs');
 
 // FacebookAuth strategy
 const facebookAuth = {
-      'clientID'        : '', 
-      'clientSecret'    : '', 
-      'callbackURL'     : ''
+      clientID: FACEBOOK_APP_ID,
+    clientSecret: FACEBOOK_APP_SECRET,
+    callbackURL: "http://localhost:3000/auth/facebook/callback"
 };
 
 // MongoDB database info
-const mongourl = ''
-const dbName = '';
+const mongourl = 'mongodb+srv://carolyan360_db_user:<db_password>@cluster0.55hozbc.mongodb.net/?appName=Cluster0'
+const dbName = '3810sample';
 const collectionName = "bookings";
 
 // user object to be put in session (for login/logout)
@@ -434,3 +434,4 @@ app.get('/{*splat}', (req,res) => {
 
 const port = process.env.PORT || 8099;
 app.listen(port, () => {console.log(`Listening at http://localhost:${port}`);});
+
