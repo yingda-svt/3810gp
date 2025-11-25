@@ -24,14 +24,7 @@ let db;
 client.connect().then(() => {
   db = client.db(dbName);
   console.log('MongoDB connected');
-
-  // 啟動伺服器
-  app.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
-  });
-}).catch(err => {
-  console.error('MongoDB connection error:', err);
-});
+ 
 // 中间件配置
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -107,8 +100,13 @@ app.post('/login', async (req, res) => {
   const { user_id, password } = req.fields;
 
   try {
-    // 從資料庫取得該 user_id 的資料
-    const user = await db.collection(collectionuser).findOne({ user_id: user_id });
+    // **確保 db 物件已經初始化**
+    if (!db) {
+      console.error("Database not initialized yet.");
+      return res.render('login', { error: 'Server error. Please try again later.' });
+    }
+
+    const user = await db.collection(collectionuser).findOne({ user_id: user_id }
     
     if (user && user.password === password) {
       // 驗證成功，設定 session
@@ -318,6 +316,13 @@ app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
 
+ // 啟動伺服器
+  app.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
+  });
+}).catch(err => {
+  console.error('MongoDB connection error:', err);
+});
 
 
 
