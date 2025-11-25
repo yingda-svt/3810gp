@@ -141,7 +141,7 @@ app.get('/list', requireLogin, async (req, res) => {
 res.render('list', {
   user: { user_id: userId, username: username },
   course: courses
-});ch (err) {
+);ch (err) {
     console.error(err);
     res.status(500).send('Server error');
   }
@@ -254,6 +254,7 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
