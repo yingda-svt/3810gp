@@ -22,7 +22,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(formidable()); // 解析 form-data
 
-// 自訂 Session Store：不使用內建 MemoryStore，避免警告
+// 自訂 Memory Store（不使用 Express 內建的 MemoryStore）
 class CustomMemoryStore extends session.Store {
   constructor() {
     super();
@@ -45,8 +45,9 @@ class CustomMemoryStore extends session.Store {
   }
 }
 
-// 使用自訂的 session store
 const myStore = new CustomMemoryStore();
+
+// 只保留一個 session 中介軟體，放在最前面
 app.use(session({
   secret: 'ole-system-secret-key-2025',
   resave: false,
@@ -90,10 +91,6 @@ app.get('/', (req, res) => {
 });
 
 // 路由：登入
-app.get('/login', (req, res) => {
-  res.render('login', { error: null });
-});
-
 app.post('/login', async (req, res) => {
   const { user_id, password } = req.fields;
   const user = await db.collection('database_user').findOne({ user_id });
@@ -101,17 +98,24 @@ app.post('/login', async (req, res) => {
     req.session.userId = user.user_id;
     req.session.username = user.username;
     req.session.role = user.role;
-    res.redirect('/list');
-  } else {
-    res.render('login', { error: 'User ID or password incorrect' });
-  }
-});
 
 // 路由：登出
 app.get('/logout', (req, res) => {
   req.session.destroy(() => {
     res.redirect('/login');
   });
+});
+    
+// 確保 session 寫入完成再導向
+    req.session.save((err) => {
+      if (err) {
+        console.error('Session save error:', err);
+      }
+      res.redirect('/list');
+    });
+  } else {
+    res.render('login', { error: 'User ID or password incorrect' });
+  }
 });
 
 // 路由：學生課程列表
@@ -229,3 +233,4 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
