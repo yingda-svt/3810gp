@@ -1,31 +1,24 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta charset="UTF-8">
+    <meta charset="UTF-8" />
     <title>Listing Course</title>
-
 </head>
 <body>
     <h1>Welcome OLE  <%= user.username %></h1>
     <hr/>
     <h2>Your user ID is <%= user.user_id %></h2>
     <h2>Your username is <%= user.username %></h2>
-    <form action="/list" method="POST">
-    <div>
-        <h2>My Course</h2>
-<ul>
-         <% if (course && course.length > 0) { %>
-            <li><%= c.course_id %> - <%= c.course_name %></li>
-<% } %>
-<% } else { %>
-    <li>No courses found.</li>
-  <% } %>
-</ul>
-    </form>
-    </div>
+    <h2>Your Courses:</h2>
+    <ul>
+        <% if (course && course.length > 0) { %>
+            <% course.forEach(function(c) { %>
+                <li><%= c.course_id %> - <%= c.course_name %></li>
+            <% }); %>
+        <% } else { %>
+            <li>No courses found.</li>
+        <% } %>
+    </ul>
     <p><a href='/logout'>Logout</a></p>
 </body>
-
 </html>
-
-
