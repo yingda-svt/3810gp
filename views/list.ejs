@@ -14,7 +14,7 @@
     <ul>
       <% if (course && course.length > 0) { %>
         <% course.forEach(function(id) { %>
-          <li><%= id %></li>
+         <li><a href="/detail?course_id=<%= id %>"><%= id %></a></li>
         <% }); %>
       <% } else { %>
         <li>No courses found.</li>
@@ -24,3 +24,4 @@
     <p><a href="/logout">Logout</a></p>
 </body>
 </html>
+
