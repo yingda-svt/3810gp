@@ -14,9 +14,10 @@
 },
     "engine": "node >= 16.0.0",
     "scripts": {
-        "start": "node server"
+        "start": "node server.js"
     }
 }
+
 
 
 
