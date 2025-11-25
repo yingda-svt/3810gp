@@ -105,9 +105,9 @@ app.post('/login', async (req, res) => {
     req.session.role = user.role;
 
     // 確保 session 儲存完再跳轉
-    req.session.save(err => {
-      if (err) console.error('Session save error:', err);
-      res.redirect('/list');
+req.session.save(err => {
+   if (err) console.error('Session save error:', err);
+    res.redirect('/list');
     });
   } else {
     res.render('login', { error: 'User ID or password incorrect' });
@@ -125,25 +125,26 @@ app.get('/logout', (req, res) => {
 // 路由：學生課程列表
 app.get('/list', requireLogin, async (req, res) => {
   const userId = req.session.userId;
-  const userDoc = await db.collection('database_user').findOne({ user_id: userId });
-  let coursesIdArray;
 
-  // 確認 userDoc.course 的型態
-  if (Array.isArray(userDoc?.course)) {
-    coursesIdArray = userDoc.course;
-  } else if (userDoc?.course != null) {
-    // 如果是單一字串，就包成陣列
-    coursesIdArray = [userDoc.course];
+  // 取得使用者資料，假設 collection 名稱為 database_user
+  const userDoc = await db.collection('database_user').findOne({ user_id: userId });
+
+  // 從 userDoc 取出 course_id，並確保它是陣列
+  let coursesIdArray;
+  if (Array.isArray(userDoc?.course_id)) {
+    coursesIdArray = userDoc.course_id;
+  } else if (userDoc?.course_id != null) {
+    coursesIdArray = [userDoc.course_id];
   } else {
-    // 如果沒有，則空陣列
     coursesIdArray = [];
   }
 
-  // 如果陣列空就不用查
+  // 查詢對應的課程資料，只有在有課程時才查
   const courses = coursesIdArray.length > 0
     ? await db.collection('datebase_course').find({ course_id: { $in: coursesIdArray } }).toArray()
     : [];
 
+  // 從 session 取得使用者名稱
   const username = req.session.username;
 
   res.render('list', {
@@ -262,6 +263,7 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
