@@ -268,6 +268,38 @@ app.get('/info', requireLogin, (req, res) => {
   res.render('info', { message });
 });
 
+// 取得所有課程
+app.get('/courses', async (req, res) => {
+  const courses = await db.collection('database_course').find().toArray();
+  res.json(courses);
+});
+
+// 建立新課程
+app.post('/courses', async (req, res) => {
+  const newCourse = req.body; // 需驗證資料
+  const result = await db.collection('database_course').insertOne(newCourse);
+  res.status(201).json({ id: result.insertedId });
+});
+
+// 取得特定課程
+app.get('/courses/:id', async (req, res) => {
+  const course = await db.collection('database_course').findOne({ _id: ObjectId(req.params.id) });
+  if (!course) return res.status(404).json({ message: 'Not found' });
+  res.json(course);
+});
+
+// 更新課程
+app.put('/courses/:id', async (req, res) => {
+  await db.collection('database_course').updateOne({ _id: ObjectId(req.params.id) }, { $set: req.body });
+  res.json({ message: 'Updated' });
+});
+
+// 刪除課程
+app.delete('/courses/:id', async (req, res) => {
+  await db.collection('database_course').deleteOne({ _id: ObjectId(req.params.id) });
+  res.json({ message: 'Deleted' });
+});
+
 // 404：用 app.use() 來捕捉所有未定義路由，避免 PathError
 app.use((req, res) => {
   res.status(404).render('info', { message: `${req.path} - Not Found` });
@@ -277,6 +309,7 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
