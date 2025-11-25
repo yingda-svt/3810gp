@@ -137,14 +137,11 @@ app.get('/list', requireLogin, async (req, res) => {
       ? await db.collection('datebase_course').find({ course_id: { $in: courseIds } }).toArray()
       : [];
     const username = req.session.username;
-    res.render('list', {
-      user: {
-        user_id: userId,
-        username: username
-      },
-      course: courses
-    });
-  } catch (err) {
+ console.log(courses);
+res.render('list', {
+  user: { user_id: userId, username: username },
+  course: courses
+});ch (err) {
     console.error(err);
     res.status(500).send('Server error');
   }
@@ -257,6 +254,7 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
