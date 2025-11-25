@@ -1,305 +1,436 @@
-var 
-	express             = require('express'),
+var express             = require('express'),
     app                 = express(),
+    passport            = require('passport'),
+    FacebookStrategy    = require('passport-facebook').Strategy,
+	{ MongoClient, ServerApiVersion, ObjectId } = require("mongodb"),
     session             = require('express-session'),
 	formidable 			= require('express-formidable'),
 	fsPromises 			= require('fs').promises;
 
-const path          = require('path');
-const { MongoClient, ObjectId } = require('mongodb');
-const mongourl = 'mongodb+srv://s1404001:14040010@cluster0.llkhaon.mongodb.net/?appName=Cluster0'; // Your MongoDB connection string
-const client = new MongoClient(mongourl);
-const dbName = 'samples_mflix';
-const collectionName = 'comments';
-
-// 中间件配置
 app.set('view engine', 'ejs');
-app.set('views', path.join(__dirname, 'views'));
-app.use(express.static('public'));
-app.use(express.urlencoded({ extended: true }));
-app.use(express.json());
-app.use(formidable());
-app.use(session({
-  secret: 'ole-system-secret-key-2025',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }
-}));
 
-// 模拟数据
-const mockUsers = [
-  { user_id: 'student1', password: '123', username: 'Test Student', role: 'student' },
-  { user_id: 'teacher1', password: '123', username: 'Test Teacher', role: 'teacher' }
-];
-
-const mockCourses = [
-  { _id: '1', course_id: 'CS101', course_name: 'Introduction to Programming' },
-  { _id: '2', course_id: 'MATH201', course_name: 'Advanced Mathematics' }
-];
-
-const mockAssignments = [
-  { 
-    assignment_id: 'ASS001', 
-    title: 'Programming Assignment 1', 
-    course_name: 'Introduction to Programming',
-    due_date: new Date('2025-12-31')
-  }
-];
-
-const mockSubmissions = [
-	{
-  submission_id: 'SUB123456',
-  assignment_title: 'Programming Assignment 1',
-  course_name: 'Introduction to Programming',
-  assignment_due_date: new Date('2025-12-31'),
-  submission_date: new Date(),
-  file_path: 'uploads/file1.pdf',
-  file_type: 'application/pdf',
-  file_size: 102400, // bytes
-  grade: null,
-  user_id: 'student1'
-}
-];
-
-// 认证中间件
-const requireLogin = (req, res, next) => {
-  if (req.session.userId) {
-    return next();
-  }
-  res.redirect('/login');
+// FacebookAuth strategy
+const facebookAuth = {
+      'clientID'        : '', 
+      'clientSecret'    : '', 
+      'callbackURL'     : ''
 };
 
-// ==================== 页面路由 ====================
+// MongoDB database info
+const mongourl = ''
+const dbName = '';
+const collectionName = "bookings";
 
-app.get('/', (req, res) => {
-  if (req.session.userId) {
-    res.redirect('/dashboard');
-  } else {
-    res.redirect('/login');
-  }
+// user object to be put in session (for login/logout)
+var user = {};  
+passport.serializeUser(function (user, done) {
+    done(null, user);
+});
+passport.deserializeUser(function (id, done) {
+    done(null, user);
 });
 
-app.get('/login', (req, res) => {
-  res.render('login', { error: null });
-});
+// passport facebook strategy
+passport.use(new FacebookStrategy({
+    "clientID"        : facebookAuth.clientID,
+    "clientSecret"    : facebookAuth.clientSecret,
+    "callbackURL"     : facebookAuth.callbackURL
+  },  
+  function (token, refreshToken, profile, done) {
+    console.log("Facebook Profile: " + JSON.stringify(profile));
+    console.log(profile);
+    user = {};
+    user['id'] = profile.id;
+    user['name'] = profile.displayName;
+    user['type'] = profile.provider;  
+    console.log('user object: ' + JSON.stringify(user));
+    return done(null,user);  
+  })
+);
 
-app.post('/login', (req, res) => {
-  const { user_id, password } = req.fields;
-  const user = mockUsers.find(u => u.user_id === user_id && u.password === password);
-  
-  if (user) {
-    req.session.userId = user.user_id;
-    req.session.username = user.username;
-    req.session.role = user.role;
-    res.redirect('/list');
-  } else {
-    res.render('login', { error: 'userID or password wrong, try  student1/123' });
-  }
-});
-
-app.get('/list', requireLogin, (req, res) => {
-  res.render('list', { 
-    user: { user_id: req.session.userId, username: req.session.username },
-    course: mockCourses
-  });
-});
-
-// 取得課程詳情，透過 detail.ejs 顯示 submission 資料
-app.get('/detail', requireLogin, (req, res) => {
-  // 可能来自 list.ejs 的兩種參數名稱：_id 或 course_id
-  const idParam = req.query._id || req.query.course_id;
-  console.log('detail idParam:', idParam);
-
-  let course = mockCourses.find(c => c._id === idParam);
-
-  if (!course && idParam) {
-    course = mockCourses.find(c => c.course_id === idParam);
-  }
-
-  if (!course) {
-    return res.redirect('/info?message=Course not found');
-  }
-
-  const associatedAssignment = mockAssignments.find(a => a.course_name === course.course_name);
-
-  const submission = {
-    submission_id: 'DET-' + course._id,
-    assignment_title: course.course_name, // 以課程名稱作為標題，視專案需求調整
-    course_name: course.course_name,
-    assignment_due_date: associatedAssignment ? associatedAssignment.due_date : null,
-    submission_date: new Date(),
-    file_path: 'no-file',
-    file_type: 'unknown',
-    file_size: 0,
-    grade: null,
-    user_id: req.session.userId
-  };
-
-  res.render('detail', { submission: submission });
-});
-app.get('/dashboard', requireLogin, (req, res) => {
-  res.render('dashboard', { 
-    user: { 
-      user_id: req.session.userId, 
-      username: req.session.username 
+// Mongodb handling functions
+const client = new MongoClient(mongourl, {
+    serverApi: {
+        version: ServerApiVersion.v1,
+        strict: true,
+        deprecationErrors: true,
     }
-  });
 });
 
+const insertDocument = async (db, doc) => {
+    var collection = db.collection(collectionName);
+    let results = await collection.insertOne(doc);
+	console.log("insert one document:" + JSON.stringify(results));
+    return results;
+}
 
-app.get('/submissions/create', requireLogin, (req, res) => {
-  res.render('create', { 
-    assignments: mockAssignments,
-    loggedInUser: { user_id: req.session.userId }
-  });
+const findDocument = async (db, criteria) => {
+    var collection = db.collection(collectionName);
+    let results = await collection.find(criteria).toArray();
+	console.log("find the documents:" + JSON.stringify(results));
+    return results;
+}
+
+const updateDocument = async (db, criteria, updateData) => {
+    var collection = db.collection(collectionName);
+    let results = await collection.updateOne(criteria, { $set: updateData });
+	console.log("update one document:" + JSON.stringify(results));
+    return results;
+}
+
+const deleteDocument = async (db, criteria) => {
+    var collection = db.collection(collectionName);
+    let results = await collection.deleteMany(criteria);
+	console.log("delete one document:" + JSON.stringify(results));
+    return results;
+}
+
+const handle_Create = async (req, res) => {
+	//try {
+		await client.connect();
+		console.log("Connected successfully to server");
+        const db = client.db(dbName);
+        let newDoc = {
+            userid: req.user.id,
+            bookingid: req.fields.bookingid,
+            mobile: req.fields.mobile
+        };
+
+        if (req.files.filetoupload && req.files.filetoupload.size > 0) {
+            const data = await fsPromises.readFile(req.files.filetoupload.path);
+            newDoc.photo = Buffer.from(data).toString('base64');
+        }
+
+		await insertDocument(db, newDoc);
+        res.redirect('/');
+	//} catch(err) {
+	//	console.error(err);
+	//} finally {
+	//	await client.close();
+    //    console.log("Closed DB connection");
+	//}
+}
+
+const handle_Find = async (req, res, criteria) => {
+	//try {
+		await client.connect();
+        console.log("Connected successfully to server");
+		const db = client.db(dbName);
+		const docs = await findDocument(db);
+        res.status(200).render('list',{nBookings: docs.length, bookings: docs, user: req.user});
+	//} catch(err) {
+	//	console.error(err);
+	//} finally {
+	//	await client.close();
+    //    console.log("Closed DB connection");
+	//}
+}
+
+const handle_Details = async (req, res, criteria) => {
+	//try {
+		await client.connect();
+		console.log("Connected successfully to server");
+        const db = client.db(dbName);
+        let DOCID = { _id: ObjectId.createFromHexString(criteria._id) };
+        const docs = await findDocument(db, DOCID);
+        res.status(200).render('details', { booking: docs[0], user: req.user});
+	//} catch(err) {
+	//	console.error(err);
+	//} finally {
+	//	await client.close();
+    //    console.log("Closed DB connection");
+	//}
+}
+
+const handle_Edit = async (req, res, criteria) => {
+	//try {
+		await client.connect();
+		console.log("Connected successfully to server");
+        const db = client.db(dbName);
+
+        let DOCID = { '_id': ObjectId.createFromHexString(criteria._id) };
+        let docs = await findDocument(db, DOCID);
+
+        if (docs.length > 0 && docs[0].userid == req.user.id) {
+            res.status(200).render('edit', { booking: docs[0], user: req.user});
+        } else {
+            res.status(500).render('info', { message: 'Unable to edit - you are not booking owner!', user: req.user});
+        }
+	//} catch(err) {
+	//	console.error(err);
+	//} finally {
+	//	await client.close();
+    //    console.log("Closed DB connection");
+	//}
+}
+
+const handle_Update = async (req, res, criteria) => {
+	//try {
+		await client.connect();
+		console.log("Connected successfully to server");
+        const db = client.db(dbName);
+
+        const DOCID = {
+            _id: ObjectId.createFromHexString(req.fields._id)
+        }
+
+        let updateData = {
+            bookingid: req.fields.bookingid,
+            mobile: req.fields.mobile,
+        };
+
+        if (req.files.filetoupload && req.files.filetoupload.size > 0) {
+            const data = await fsPromises.readFile(req.files.filetoupload.path);
+            updateData.photo = Buffer.from(data).toString('base64');
+        }
+
+        const results = await updateDocument(db, DOCID, updateData);
+        res.status(200).render('info', {message: `Updated ${results.modifiedCount} document(s)`, user: req.user});
+	//} catch(err) {
+	//	console.error(err);
+	//} finally {
+	//	await client.close();
+    //    console.log("Closed DB connection");
+	//}
+}
+
+const handle_Delete = async (req, res) => {
+	//try {
+		await client.connect();
+		console.log("Connected successfully to server");
+        const db = client.db(dbName);
+        let DOCID = { '_id': ObjectId.createFromHexString(req.query._id) };
+        let docs = await findDocument(db, DOCID);
+        if (docs.length > 0 && docs[0].userid == req.user.id) {   // user object by Passport.js
+            //await db.collection('bookings').deleteOne(DOCID);
+			await deleteDocument(db, DOCID);
+            res.status(200).render('info', { message: `Booking ID ${docs[0].bookingid} removed.`, user: req.user});
+        } else {
+            res.status(500).render('info', { message: 'Unable to delete - you are not booking owner!', user: req.user});
+        }
+	//} catch(err) {
+	//	console.error(err);
+	//} finally {
+	//	await client.close();
+    //    console.log("Closed DB connection");
+	//}
+}
+
+// Middleware 1, use formidable()
+app.use(formidable());
+
+// Middleware 1, define and use it
+app.use((req,res,next) => {
+    let d = new Date();
+    console.log(`TRACE: ${req.path} was requested at ${d.toLocaleDateString()}`);  
+    next();
 });
 
+// Middleware 2, define
+const isLoggedIn = (req,res,next) => {
+    if (req.isAuthenticated())
+        return next();
+    res.redirect('/login');
+}
 
+// Middleware 3,4,5, use
+app.use(session({
+    secret: "tHiSiSasEcRetStr",
+    resave: true,
+    saveUninitialized: true }));
+app.use(passport.initialize());
+app.use(passport.session());
 
-app.post('/submissions/create', requireLogin, (req, res) => {
-  const { assignmentId, userId } = req.fields;
-  
-  const assignment = mockAssignments.find(a => a.assignment_id === assignmentId);
-  
-  const newSubmission = {
-    submission_id: 'SUB' + Date.now(),
-    assignment_id: assignmentId,
-    user_id: userId,
-    submission_date: new Date(),
-    file_path: req.files.submissionFile ? req.files.submissionFile.name : 'no-file',
-    file_size: req.files.submissionFile ? req.files.submissionFile.size : 0,
-    file_type: 'test',
-    grade: null,
-    assignment_title: assignment ? assignment.title : 'Unknown',
-    course_name: assignment ? assignment.course_name : 'Unknown'
-  };
-  
-  mockSubmissions.push(newSubmission);
-  res.redirect('/info?message=Assignment submitted successfully! submitted ID: ' + newSubmission.submission_id);
+// login page
+app.get("/login", function (req, res) {
+	res.status(200).render('login', {user:req.user});
+});
+app.get("/auth/facebook", passport.authenticate("facebook", { scope : "email" }));
+app.get("/auth/facebook/callback",
+    passport.authenticate("facebook", {
+        successRedirect : "/list",
+        failureRedirect : "/"
+}));
+
+app.get('/', isLoggedIn, (req,res) => {
+    res.redirect('/list');
+})
+
+app.get('/list', isLoggedIn, (req,res) => {
+    handle_Find(req, res, req.query.docs);
+})
+
+app.get('/details',isLoggedIn, (req,res) => {
+    handle_Details(req, res, req.query);
+})
+
+app.get('/edit', isLoggedIn, (req,res) => {
+    handle_Edit(req, res, req.query);
+})
+
+app.post('/update', isLoggedIn, (req,res) => {
+    handle_Update(req, res, req.query);
+})
+
+app.get('/create', isLoggedIn, (req,res) => {
+    res.status(200).render('create',{user:req.user})
+})
+app.post('/create', isLoggedIn, (req, res) => {
+    handle_Create(req, res);
 });
 
-app.get('/submissions/my-submissions', requireLogin, (req, res) => {
-  const userSubmissions = mockSubmissions.filter(s => s.user_id === req.session.userId);
-  res.render('my-submissions', { 
-    submissions: userSubmissions,
-    user: { user_id: req.session.userId, username: req.session.username }
-  });
+app.get('/delete', isLoggedIn, (req,res) => {
+    handle_Delete(req, res);
 });
 
-app.get('/submissions/detail/:submissionId', requireLogin, (req, res) => {
-  const submission = mockSubmissions.find(s => 
-    s.submission_id === req.params.submissionId && s.user_id === req.session.userId
-  );
-  
-  if (submission) {
-    res.render('detail', { submission: submission });
-  } else {
-    res.redirect('/info?message=Submission record not found');
-  }
+app.get("/logout", function(req, res) {
+    req.logout(function(err) {
+        if (err) { return next(err); }
+        res.redirect('/');
+    });
 });
 
-app.get('/submissions/delete/:submissionId', requireLogin, (req, res) => {
-  const submission = mockSubmissions.find(s => 
-    s.submission_id === req.params.submissionId && s.user_id === req.session.userId
-  );
-  
-  if (submission) {
-    res.render('delete', { submission: submission });
-  } else {
-    res.redirect('/info?message=Submission record not found');
-  }
+//
+// RESTful
+//
+
+/*  CREATE
+curl -X POST -H "Content-Type: application/json" --data '{"bookingid":"BK999","mobile":"00000000"}' localhost:8099/api/booking/BK999
+
+curl -X POST -F 'bookingid=BK999' -F "filetoupload=@image.png" localhost:8099/api/booking/BK999
+
+curl -X POST -F 'bookingid=BK999' -F "bookingid=BK999" -F "mobile=00000000" -F "filetoupload=@image.png" localhost:8099/api/booking/BK999
+*/
+app.post('/api/booking/:bookingid', async (req,res) => { //async programming way
+    if (req.params.bookingid) {
+        console.log(req.body)
+		//try {
+			await client.connect();
+			console.log("Connected successfully to server");
+		    const db = client.db(dbName);
+		    let newDoc = {
+		        //userid: req.user.id,
+		        bookingid: req.fields.bookingid,
+		        mobile: req.fields.mobile};
+		    if (req.files.filetoupload && req.files.filetoupload.size > 0) {
+		        const data = await fsPromises.readFile(req.files.filetoupload.path);
+		        newDoc.photo = Buffer.from(data).toString('base64');}
+			await insertDocument(db, newDoc);
+		    res.status(200).json({"Successfully inserted":newDoc}).end();
+		//} catch(err) {
+		//	console.error(err);
+		//} finally {
+		//	await client.close();
+		//    console.log("Closed DB connection");
+		//}
+    } else {
+        res.status(500).json({"error": "missing bookingid"});
+    }
+})
+
+/* READ
+curl -X GET http://localhost:8099/api/booking/BK001
+*/
+
+app.get('/api/booking/:bookingid', async (req,res) => { //async programming way
+	if (req.params.bookingid) {
+		console.log(req.body)
+        let criteria = {};
+        criteria['bookingid'] = req.params.bookingid;
+		/*const criteria = { bookingid: req.params.bookingid }*/ //another coding way	
+		//try {
+			await client.connect();
+		    console.log("Connected successfully to server");
+			const db = client.db(dbName);
+			const docs = await findDocument(db, criteria);
+		    res.status(200).json(docs);
+		//} catch(err) {
+		//	console.error(err);
+		//} finally {
+		//	await client.close();
+		//    console.log("Closed DB connection");
+		//}
+	} else {
+        res.status(500).json({"error": "missing bookingid"}).end();
+    }
 });
 
-app.post('/submissions/delete', requireLogin, (req, res) => {
-  const { submissionId } = req.fields;
-  const index = mockSubmissions.findIndex(s => 
-    s.submission_id === submissionId && s.user_id === req.session.userId
-  );
-  
-  if (index !== -1) {
-    mockSubmissions.splice(index, 1);
-    res.redirect('/info?message=Delete submission successful');
-  } else {
-    res.redirect('/info?message=Deletion failed: Submission record not found');
-  }
-});
+/*  UPDATE
+curl -X PUT -H "Content-Type: application/json" --data '{"mobile":"88888888"}' localhost:8099/api/booking/BK999
 
-app.get('/info', requireLogin, (req, res) => {
-  const message = req.query.message || 'Operation completed';
-  res.render('info', { message: message });
-});
+curl -X PUT -F "mobile=99999999" localhost:8099/api/booking/BK999 
+*/
+app.put('/api/booking/:bookingid', async (req,res) => {
+    if (req.params.bookingid) {
+        console.log(req.body)
+		let criteria = {};
+        criteria['bookingid'] = req.params.bookingid;
+		//try {
+			await client.connect();
+			console.log("Connected successfully to server");
+		    const db = client.db(dbName);
 
-app.get('/logout', (req, res) => {
-  req.session.destroy();
-  res.redirect('/list');
-});
-// ==================== RESTful API ====================
+		    // const DOCID = {
+		    //     _id: ObjectId.createFromHexString(req.fields._id)
+		    // }
 
-app.get('/api/assignments', (req, res) => {
-  res.json(mockAssignments);
-});
+		    let updateData = {
+		        bookingid: req.fields.bookingid || req.params.bookingid,
+		        mobile: req.fields.mobile,
+		    };
 
-app.post('/api/assignments', (req, res) => {
-  const newAssignment = {
-    assignment_id: 'ASS' + Date.now(),
-    ...req.fields,
-    created_at: new Date()
-  };
-  mockAssignments.push(newAssignment);
-  res.status(201).json(newAssignment);
-});
+		    if (req.files.filetoupload && req.files.filetoupload.size > 0) {
+		        const data = await fsPromises.readFile(req.files.filetoupload.path);
+		        updateData.photo = Buffer.from(data).toString('base64');
+		    }
 
-app.put('/api/assignments/:id', (req, res) => {
-  const assignment = mockAssignments.find(a => a.assignment_id === req.params.id);
-  if (assignment) {
-    Object.assign(assignment, req.fields);
-    res.json(assignment);
-  } else {
-    res.status(404).json({ error: 'Assignment not found' });
-  }
-});
+		    const results = await updateDocument(db, criteria, updateData);
+		    res.status(200).json(results).end();
+		//} catch(err) {
+		//	console.error(err);
+		//} finally {
+		//	await client.close();
+		//    console.log("Closed DB connection");
+		//}
+    } else {
+        res.status(500).json({"error": "missing bookingid"});
+    }
+})
 
-app.delete('/api/assignments/:id', (req, res) => {
-  const index = mockAssignments.findIndex(a => a.assignment_id === req.params.id);
-  if (index !== -1) {
-    mockAssignments.splice(index, 1);
-    res.json({ message: 'Deletion successful' });
-  } else {
-    res.status(404).json({ error: 'Assignment not found' });
-  }
-});
+/*  DELETE
+curl -X DELETE localhost:8099/api/booking/BK999
+*/
+app.delete('/api/booking/:bookingid', async (req,res) => {
+    if (req.params.bookingid) {
+		console.log(req.body)
+		let criteria = {};
+        criteria['bookingid'] = req.params.bookingid;
+		//try {
+			await client.connect();
+			console.log("Connected successfully to server");
+		    const db = client.db(dbName);
+		    // let DOCID = { '_id': ObjectId.createFromHexString(req.query._id) };
+		    // let docs = await findDocument(db, DOCID);
+		    const results = await deleteDocument(db, criteria);
+            console.log(results)
+		    res.status(200).json(results).end();
+		//} catch(err) {
+		//	console.error(err);
+		//} finally {
+		//	await client.close();
+		//    console.log("Closed DB connection");
+		//}
+    } else {
+        res.status(500).json({"error": "missing bookingid"});       
+    }
+})
+//
+// End of Restful
+//
 
+app.get('/{*splat}', (req,res) => {
+    res.status(404).render('info', {message: `${req.path} - Unknown request!` });
+})
 
-// Start server
 const port = process.env.PORT || 8099;
-app.listen(port, () => {
-  console.log(`Server listening on port ${port}`);
-});
-
-// Use a named parameter for the wildcard
-app.all('/*', (req, res) => {
-  res.status(404).render('info', { message: `${req.path} - Unknown request!` });
-});
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+app.listen(port, () => {console.log(`Listening at http://localhost:${port}`);});
