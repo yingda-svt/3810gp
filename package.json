@@ -1,25 +1,20 @@
 {
     "name": "server",
-    "description": "MVC Booking Project Demo",
+    "description": "EJS + MongoDB + Outh + RESTful express app",
     "author": "Cloud381 Instructor",
     "version": "0.0.1",
     "dependencies": {
-    "ejs": "3.1.10",
-    "express": "4.19.2",
-    "express-formidable": "*",
-    "mongodb": "6.9.0",
-    "nodemon": "2.0.22",
-    "express-session": "^1.17.3"
-},
-    "engine": "node >= 16.0.0",
+        "ejs": "*",
+        "express": "*",
+        "express-formidable": "*",
+        "mongodb": "^6.7.0",
+        "nodemon": "*",
+        "passport": "*",
+        "passport-facebook": "*",
+        "express-session": "*"
+    },
+    "engine": "node >= 18.0.0",
     "scripts": {
         "start": "node server"
     }
 }
-
-
-
-
-
-
-
