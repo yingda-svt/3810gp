@@ -14,7 +14,16 @@ const collectionasm = 'database_assignment';
 const collectioncourse = 'database_course';
 const collectionuser = 'database_user';
 const collectionsub = 'datebase_submission';
+let db;
 
+client.connect()
+  .then(() => {
+    db = client.db('3810gp'); // 替換成你的資料庫名稱
+    console.log('MongoDB connected');
+  })
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+  });
 // 中间件配置
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
@@ -303,6 +312,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
