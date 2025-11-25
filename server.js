@@ -1,11 +1,10 @@
-const express = require('express');
-const session = require('express-session');
-const formidable = require('express-formidable');
-const fsPromises = require('fs').promises;
-const path = require('path');
-
-
-const { MongoClient, ObjectId } = require('mongodb');
+import express from 'express';
+import session from 'express-session';
+import formidable from 'express-formidable';
+import { promises as fsPromises } from 'fs';
+import { MongoClient, ObjectId } from 'mongodb';
+import path from 'path';
+import { fileURLToPath } from 'url';
 
 const __filename = __filename; // 這在 CommonJS 裡已預設
 const __dirname = path.dirname(__filename);
@@ -316,6 +315,7 @@ app.delete('/api/assignments/:id', (req, res) => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
