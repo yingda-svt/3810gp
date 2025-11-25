@@ -163,30 +163,22 @@ app.get('/list', requireLogin, async (req, res) => {
 
 // 路由：課程詳細
 app.get('/detail', requireLogin, async (req, res) => {
-  const courseId = req.query._id || req.query.course_id;
-  let course;
-  try {
-    course = await db.collection('database_course').findOne({ _id: ObjectId(courseId) }) ||
-             await db.collection('database_course').findOne({ course_id: courseId });
-  } catch (err) {
-    return res.redirect('/info?message=Course not found');
+  const courseId = req.query.course_id;
+  if (!courseId) {
+    return res.redirect('/list');
   }
-  if (!course) return res.redirect('/info?message=Course not found');
 
-  const assignments = await db.collection('database_assignment').find({ course_id: course.course_id }).toArray();
+  // 取得課程資料（可選，若需要顯示課程名稱）
+  // const course = await db.collection('database_course').findOne({ course_id: courseId });
 
-  // 檢查是否已提交
-  const userId = req.session.userId;
-  const assignmentsWithStatus = await Promise.all(assignments.map(async (a) => {
-    const sub = await db.collection('datebase_submission').findOne({ assignment_id: a._id, user_id: userId });
-    return {
-      ...a,
-      submitted: !!sub,
-      submission: sub
-    };
-  }));
+  // 取得該課程所有作業
+  const assignments = await db.collection('database_assignment').find({ course_id: courseId }).toArray();
 
-  res.render('detail', { course, assignments: assignmentsWithStatus });
+  // 依照你的範例，assignment 可能沒有，若空則呈現 "no assignment"
+  res.render('detail', {
+    course_id: courseId,
+    assignments: assignments
+  });
 });
 
 // 路由：上傳作業頁面
@@ -299,6 +291,7 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
