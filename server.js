@@ -4,6 +4,7 @@ const formidable = require('express-formidable');
 const { promises: fsPromises } = require('fs');
 const path = require('path');
 const { MongoClient, ObjectId } = require('mongodb');
+const MongoStore = require('connect-mongo');
 
 const app = express();
 const port = process.env.PORT || 8099;
@@ -27,7 +28,8 @@ app.use(session({
   secret: 'ole-system-secret-key-2025',
   resave: false,
   saveUninitialized: false,
-  // store: new RedisStore({ client: redisClient }) // 如有 Redis，請啟用
+  store: MongoStore.create({ mongoUrl: mongourl, dbName: '3810gp' }),
+  cookie: { secure: false, maxAge: 24 * 3600 * 1000 }
 }));
 
 // 連線 MongoDB 並啟動伺服器
@@ -200,6 +202,7 @@ app.get('/info', requireLogin, (req, res) => {
 app.use((req, res) => {
   res.status(404).render('info', { message: `${req.path} - Not Found` });
 });
+
 
 
 
