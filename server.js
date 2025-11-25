@@ -27,7 +27,7 @@ app.use(session({
   secret: 'ole-system-secret-key-2025',
   resave: false,
   saveUninitialized: false,
-  // store: 需要用 redis 或其他方案，這裡用預設
+  // store: new RedisStore({ client: redisClient }) // 如有 Redis，請啟用
 }));
 
 // 連線 MongoDB 並啟動伺服器
@@ -100,20 +100,31 @@ app.get('/list', requireLogin, async (req, res) => {
   res.render('list', { user: { user_id: userId, username: req.session.username }, course: courses });
 });
 
-// 路由：課程詳細（含作業清單）
-app.get('/detail/:_id', requireLogin, async (req, res) => {
-  const courseId = req.params._id;
+app.get('/detail', requireLogin, async (req, res) => {
+  const courseId = req.query._id || req.query.course_id;
   let course;
   try {
     course = await db.collection('database_course').findOne({ _id: ObjectId(courseId) }) ||
              await db.collection('database_course').findOne({ course_id: courseId });
   } catch (err) {
-    return res.redirect('/info?message=課程不存在');
+    return res.redirect('/info?message=Course not found');
   }
-  if (!course) return res.redirect('/info?message=課程不存在');
+  if (!course) return res.redirect('/info?message=Course not found');
 
+  const assignments = await db.collection('database_assignment').find({ course_id: course.course_id }).toArray();
 
-  res.render('detail', { course });
+  // 檢查是否已提交
+  const userId = req.session.userId;
+  const assignmentsWithStatus = await Promise.all(assignments.map(async (a) => {
+    const sub = await db.collection('datebase_submission').findOne({ assignment_id: a._id, user_id: userId });
+    return {
+      ...a,
+      submitted: !!sub,
+      submission: sub
+    };
+  }));
+
+  res.render('detail', { course, assignments: assignmentsWithStatus });
 });
 
 // 路由：上傳作業頁面
@@ -138,7 +149,7 @@ app.post('/submissions/create', requireLogin, async (req, res) => {
   await fsPromises.rename(file.path, newPath);
 
   await db.collection('datebase_submission').insertOne({
-    submission_id: new ObjectId().toString(),
+    submission_id: new ObjectId(),
     assignment_id: assignmentId,
     user_id: userId,
     submission_date: new Date(),
@@ -185,9 +196,10 @@ app.get('/info', requireLogin, (req, res) => {
   res.render('info', { message });
 });
 
-// 404 頁面
-app.all('/*', (req, res) => {
+// 404 處理：改用 app.use 避免 pathToRegexp 解析問題
+app.use((req, res) => {
   res.status(404).render('info', { message: `${req.path} - Not Found` });
 });
+
 
 
