@@ -1,437 +1,239 @@
-var express             = require('express'),
-    app                 = express(),
-    passport            = require('passport'),
-    FacebookStrategy    = require('passport-facebook').Strategy,
-	{ MongoClient, ServerApiVersion, ObjectId } = require("mongodb"),
-    session             = require('express-session'),
-	formidable 			= require('express-formidable'),
-	fsPromises 			= require('fs').promises;
 
-app.set('view engine', 'ejs');
+/* 
+Controllers - express modules
+-----------------------------
+express-formiddable: https://www.npmjs.com/package/express-formidable
+- express-formidable can basically parse form types, including application/x-www-form-urlencoded, application/json, and multipart/form-data.
+-----------------------------
+fs/promises: https://nodejs.org/zh-tw/learn/manipulating-files/reading-files-with-nodejs
+-----------------------------
+*/
+const express = require('express');
+const app = express();
+const fs = require('node:fs/promises');
+const formidable = require('express-formidable'); 
+app.use(formidable());
 
-// FacebookAuth strategy
-const facebookAuth = {
-      clientID: FACEBOOK_APP_ID,
-    clientSecret: FACEBOOK_APP_SECRET,
-    callbackURL: "http://localhost:3000/auth/facebook/callback"
-};
-
-// MongoDB database info
-const mongourl = 'mongodb+srv://carolyan360_db_user:<db_password>@cluster0.55hozbc.mongodb.net/?appName=Cluster0'
-const dbName = '3810sample';
+/* Model - mongodb modules
+mongodb ^6.9: https://www.npmjs.com/package/mongodb
+*/
+const { MongoClient, ObjectId } = require("mongodb");
+const mongourl = '';
+const client = new MongoClient(mongourl); 
+const dbName = 'project_samples';
 const collectionName = "bookings";
 
-// user object to be put in session (for login/logout)
-var user = {};  
-passport.serializeUser(function (user, done) {
-    done(null, user);
-});
-passport.deserializeUser(function (id, done) {
-    done(null, user);
-});
-
-// passport facebook strategy
-passport.use(new FacebookStrategy({
-    "clientID"        : facebookAuth.clientID,
-    "clientSecret"    : facebookAuth.clientSecret,
-    "callbackURL"     : facebookAuth.callbackURL
-  },  
-  function (token, refreshToken, profile, done) {
-    console.log("Facebook Profile: " + JSON.stringify(profile));
-    console.log(profile);
-    user = {};
-    user['id'] = profile.id;
-    user['name'] = profile.displayName;
-    user['type'] = profile.provider;  
-    console.log('user object: ' + JSON.stringify(user));
-    return done(null,user);  
-  })
-);
-
-// Mongodb handling functions
-const client = new MongoClient(mongourl, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-    }
-});
+// Views
+app.set('view engine', 'ejs');
 
 const insertDocument = async (db, doc) => {
     var collection = db.collection(collectionName);
     let results = await collection.insertOne(doc);
 	console.log("insert one document:" + JSON.stringify(results));
     return results;
+
 }
 
 const findDocument = async (db, criteria) => {
-    var collection = db.collection(collectionName);
-    let results = await collection.find(criteria).toArray();
-	console.log("find the documents:" + JSON.stringify(results));
-    return results;
-}
+	let findResults = [];
+	let collection = db.collection(collectionName);
+	console.log(`findCriteria: ${JSON.stringify(criteria)}`);
+   	findResults = await collection.find(criteria).toArray();
+	console.log(`findDocument: ${findResults.length}`);
+	console.log(`findResults: ${JSON.stringify(findResults)}`);
+	return findResults;
+};
 
-const updateDocument = async (db, criteria, updateData) => {
-    var collection = db.collection(collectionName);
-    let results = await collection.updateOne(criteria, { $set: updateData });
-	console.log("update one document:" + JSON.stringify(results));
-    return results;
-}
-
-const deleteDocument = async (db, criteria) => {
-    var collection = db.collection(collectionName);
-    let results = await collection.deleteMany(criteria);
-	console.log("delete one document:" + JSON.stringify(results));
-    return results;
+const updateDocument = async (db, criteria, updateDoc) => {
+    let updateResults = [];
+	let collection = db.collection(collectionName);
+	console.log(`updateCriteria: ${JSON.stringify(criteria)}`);
+   	updateResults = await collection.updateOne(criteria,{$set : updateDoc});
+	console.log(`updateResults: ${JSON.stringify(updateResults)}`);
+	return updateResults;
 }
 
 const handle_Create = async (req, res) => {
-	//try {
-		await client.connect();
-		console.log("Connected successfully to server");
-        const db = client.db(dbName);
-        let newDoc = {
-            userid: req.user.id,
-            bookingid: req.fields.bookingid,
-            mobile: req.fields.mobile
-        };
+	await client.connect();
+	console.log("Connected successfully to server");
+    const db = client.db(dbName);
+    let newDoc = {
+        bookingid: req.fields.bookingid,
+        mobile: req.fields.mobile
+	};
 
-        if (req.files.filetoupload && req.files.filetoupload.size > 0) {
-            const data = await fsPromises.readFile(req.files.filetoupload.path);
-            newDoc.photo = Buffer.from(data).toString('base64');
-        }
+	if (req.files.filetoupload && req.files.filetoupload.size > 0) {
+		const data = await fsPromises.readFile(req.files.filetoupload.path);
+		newDoc.photo = Buffer.from(data).toString('base64');
+	}
+	await insertDocument(db, newDoc);
+    res.redirect('/');
+}
+	/* create.js
+	<html>
+		<body>
+			<H1>Welcome, <%=user%></H1>
+			<hr/>
+			<form action="/create" method="POST" enctype="multipart/form-data">
+				Booking ID: <input name="bookingid"><br>
+				Mobile: <input name="mobile"  /><br>
+				<input type="file" name="filetoupload"><br>
+				<input type="submit" value="create">  
+			</form>
+		</body>
+	</html>
+	*/
 
-		await insertDocument(db, newDoc);
-        res.redirect('/');
-	//} catch(err) {
-	//	console.error(err);
-	//} finally {
-	//	await client.close();
-    //    console.log("Closed DB connection");
-	//}
+
+const handle_Find = async (res, criteria) => {
+	await client.connect();
+	console.log("Connected successfully to server");
+	const db = client.db(dbName);
+    const docs = await findDocument(db, criteria);
+	await client.close();
+    console.log("Closed DB connection");
+    res.status(200).render('list',{nBookings: docs.length, bookings: docs});
+    /* list.ejs
+	<html>
+		<body>
+		    <H2>Bookings (<%= nBookings %>)</H2>
+		    <ul>
+		        <% for (var b of bookings) { %>
+		        <li>Booking ID: <a href="/details?_id=<%= b._id %>"><%= b.bookingid %></a></li>
+		        <% } %>
+		    </ul>
+		</body>
+	</html>
+		*/
 }
 
-const handle_Find = async (req, res, criteria) => {
-	//try {
-		await client.connect();
-        console.log("Connected successfully to server");
-		const db = client.db(dbName);
-		const docs = await findDocument(db);
-        res.status(200).render('list',{nBookings: docs.length, bookings: docs, user: req.user});
-	//} catch(err) {
-	//	console.error(err);
-	//} finally {
-	//	await client.close();
-    //    console.log("Closed DB connection");
-	//}
+const handle_Details = async (res, criteria) => {
+    await client.connect();
+	console.log("Connected successfully to server");
+	const db = client.db(dbName);
+    /* use Document ID for query */
+    let DOCID = {};
+    DOCID['_id'] = new ObjectId(criteria._id);
+	const docs = await findDocument(db, DOCID); 
+	await client.close();
+    console.log("Closed DB connection");
+    res.status(200).render('details', {booking: docs[0]});
+    /* details.ejs
+	<html>
+		<body>
+		    <H2>Booking Details</H2><hr>
+		    <p>Booking ID: <%= booking.bookingid %></p>
+		    <p>Mobile: <%= booking.mobile %></p>
+
+		    <% if (booking.photo) { %>
+		        <img src="data:image/jpg;base64, <%= booking.photo %>"><br>
+		    <% } %>
+
+		    <a href="/edit?_id=<%= booking._id %>">edit</a><br>
+		    <a href="/">home</a>
+		</body>
+	</html>
+    */
 }
 
-const handle_Details = async (req, res, criteria) => {
-	//try {
-		await client.connect();
-		console.log("Connected successfully to server");
-        const db = client.db(dbName);
-        let DOCID = { _id: ObjectId.createFromHexString(criteria._id) };
-        const docs = await findDocument(db, DOCID);
-        res.status(200).render('details', { booking: docs[0], user: req.user});
-	//} catch(err) {
-	//	console.error(err);
-	//} finally {
-	//	await client.close();
-    //    console.log("Closed DB connection");
-	//}
-}
-
-const handle_Edit = async (req, res, criteria) => {
-	//try {
-		await client.connect();
-		console.log("Connected successfully to server");
-        const db = client.db(dbName);
-
-        let DOCID = { '_id': ObjectId.createFromHexString(criteria._id) };
-        let docs = await findDocument(db, DOCID);
-
-        if (docs.length > 0 && docs[0].userid == req.user.id) {
-            res.status(200).render('edit', { booking: docs[0], user: req.user});
-        } else {
-            res.status(500).render('info', { message: 'Unable to edit - you are not booking owner!', user: req.user});
-        }
-	//} catch(err) {
-	//	console.error(err);
-	//} finally {
-	//	await client.close();
-    //    console.log("Closed DB connection");
-	//}
+const handle_Edit = async (res, criteria) => {
+    await client.connect();
+	console.log("Connected successfully to server");
+	const db = client.db(dbName);
+    /* use Document ID for query */
+    let DOCID = {};
+    DOCID['_id'] = new ObjectId(criteria._id)
+	const docs = await findDocument(db, DOCID); 
+	await client.close();
+    console.log("Closed DB connection");
+    res.status(200).render('edit',{booking: docs[0]});
+    /* edit.ejs
+	<html>
+		<body>
+		    <form action="/update" method="POST" enctype="multipart/form-data">
+		        Booking ID: <input name="bookingid" value=<%= booking.bookingid %>><br>
+		        Mobile: <input name="mobile" value=<%= booking.mobile %> /><br>
+		        <input type="file" name="filetoupload"><br>
+		        <input type="hidden" name="_id" value=<%= booking._id %>>
+		        <input type="submit" value="update">  
+		    </form>
+		</body>
+	</html>
+    */
 }
 
 const handle_Update = async (req, res, criteria) => {
-	//try {
-		await client.connect();
-		console.log("Connected successfully to server");
-        const db = client.db(dbName);
-
-        const DOCID = {
-            _id: ObjectId.createFromHexString(req.fields._id)
-        }
-
-        let updateData = {
-            bookingid: req.fields.bookingid,
-            mobile: req.fields.mobile,
-        };
-
-        if (req.files.filetoupload && req.files.filetoupload.size > 0) {
-            const data = await fsPromises.readFile(req.files.filetoupload.path);
-            updateData.photo = Buffer.from(data).toString('base64');
-        }
-
-        const results = await updateDocument(db, DOCID, updateData);
-        res.status(200).render('info', {message: `Updated ${results.modifiedCount} document(s)`, user: req.user});
-	//} catch(err) {
-	//	console.error(err);
-	//} finally {
-	//	await client.close();
-    //    console.log("Closed DB connection");
-	//}
-}
-
-const handle_Delete = async (req, res) => {
-	//try {
-		await client.connect();
-		console.log("Connected successfully to server");
-        const db = client.db(dbName);
-        let DOCID = { '_id': ObjectId.createFromHexString(req.query._id) };
-        let docs = await findDocument(db, DOCID);
-        if (docs.length > 0 && docs[0].userid == req.user.id) {   // user object by Passport.js
-            //await db.collection('bookings').deleteOne(DOCID);
-			await deleteDocument(db, DOCID);
-            res.status(200).render('info', { message: `Booking ID ${docs[0].bookingid} removed.`, user: req.user});
+	await client.connect();
+	console.log("Connected successfully to server");
+	const db = client.db(dbName);
+        var DOCID = {};
+        DOCID['_id'] = new ObjectId(req.fields._id);
+        var updateDoc = {};
+        updateDoc['bookingid'] = req.fields.bookingid;
+        updateDoc['mobile'] = req.fields.mobile;
+        if (req.files.filetoupload.size > 0) {
+			const data = await fs.readFile(req.files.filetoupload.path, { encoding: 'base64' });
+			updateDoc['photo'] = new Buffer.from(data);
+            const results = await updateDocument(db, DOCID, updateDoc);
+			await client.close();
+    		console.log("Closed DB connection");
+			res.status(200).render('info', {message: `Updated ${results.modifiedCount} document(s)`})
         } else {
-            res.status(500).render('info', { message: 'Unable to delete - you are not booking owner!', user: req.user});
+            const results = await updateDocument(db, DOCID, updateDoc);
+			await client.close();
+    		console.log("Closed DB connection");
+			res.status(200).render('info', {message: `Updated ${results.modifiedCount} document(s)`})
         }
-	//} catch(err) {
-	//	console.error(err);
-	//} finally {
-	//	await client.close();
-    //    console.log("Closed DB connection");
-	//}
+	    /* info.ejs
+			<html>
+				<body>
+					<b><%= message %></b>
+					<p><a href="/">home</a></p>
+				</body>
+			</html>
+            */
 }
 
-// Middleware 1, use formidable()
-app.use(formidable());
-
-// Middleware 1, define and use it
-app.use((req,res,next) => {
-    let d = new Date();
-    console.log(`TRACE: ${req.path} was requested at ${d.toLocaleDateString()}`);  
-    next();
-});
-
-// Middleware 2, define
-const isLoggedIn = (req,res,next) => {
-    if (req.isAuthenticated())
-        return next();
-    res.redirect('/login');
-}
-
-// Middleware 3,4,5, use
-app.use(session({
-    secret: "tHiSiSasEcRetStr",
-    resave: true,
-    saveUninitialized: true }));
-app.use(passport.initialize());
-app.use(passport.session());
-
-// login page
-app.get("/login", function (req, res) {
-	res.status(200).render('login', {user:req.user});
-});
-app.get("/auth/facebook", passport.authenticate("facebook", { scope : "email" }));
-app.get("/auth/facebook/callback",
-    passport.authenticate("facebook", {
-        successRedirect : "/list",
-        failureRedirect : "/"
-}));
-
-app.get('/', isLoggedIn, (req,res) => {
-    res.redirect('/list');
+app.get('/', (req,res) => {
+    res.redirect('/find');
 })
 
-app.get('/list', isLoggedIn, (req,res) => {
-    handle_Find(req, res, req.query.docs);
+app.get('/create', (req,res) => {
+    res.status(200).render('create',{user: 'demo'})
 })
 
-app.get('/details',isLoggedIn, (req,res) => {
-    handle_Details(req, res, req.query);
+app.post('/create', (req, res) => {
+    handle_Create(req, res);
 })
 
-app.get('/edit', isLoggedIn, (req,res) => {
-    handle_Edit(req, res, req.query);
+app.get('/find', (req,res) => {
+    handle_Find(res, req.query.docs);
 })
 
-app.post('/update', isLoggedIn, (req,res) => {
+app.get('/details', (req,res) => {
+    handle_Details(res, req.query);
+})
+
+app.get('/edit', (req,res) => {
+    handle_Edit(res, req.query);
+})
+
+app.post('/update', (req,res) => {
     handle_Update(req, res, req.query);
 })
 
-app.get('/create', isLoggedIn, (req,res) => {
-    res.status(200).render('create',{user:req.user})
-})
-app.post('/create', isLoggedIn, (req, res) => {
-    handle_Create(req, res);
-});
-
-app.get('/delete', isLoggedIn, (req,res) => {
-    handle_Delete(req, res);
-});
-
-app.get("/logout", function(req, res) {
-    req.logout(function(err) {
-        if (err) { return next(err); }
-        res.redirect('/');
-    });
-});
-
-//
-// RESTful
-//
-
-/*  CREATE
-curl -X POST -H "Content-Type: application/json" --data '{"bookingid":"BK999","mobile":"00000000"}' localhost:8099/api/booking/BK999
-
-curl -X POST -F 'bookingid=BK999' -F "filetoupload=@image.png" localhost:8099/api/booking/BK999
-
-curl -X POST -F 'bookingid=BK999' -F "bookingid=BK999" -F "mobile=00000000" -F "filetoupload=@image.png" localhost:8099/api/booking/BK999
-*/
-app.post('/api/booking/:bookingid', async (req,res) => { //async programming way
-    if (req.params.bookingid) {
-        console.log(req.body)
-		//try {
-			await client.connect();
-			console.log("Connected successfully to server");
-		    const db = client.db(dbName);
-		    let newDoc = {
-		        //userid: req.user.id,
-		        bookingid: req.fields.bookingid,
-		        mobile: req.fields.mobile};
-		    if (req.files.filetoupload && req.files.filetoupload.size > 0) {
-		        const data = await fsPromises.readFile(req.files.filetoupload.path);
-		        newDoc.photo = Buffer.from(data).toString('base64');}
-			await insertDocument(db, newDoc);
-		    res.status(200).json({"Successfully inserted":newDoc}).end();
-		//} catch(err) {
-		//	console.error(err);
-		//} finally {
-		//	await client.close();
-		//    console.log("Closed DB connection");
-		//}
-    } else {
-        res.status(500).json({"error": "missing bookingid"});
-    }
-})
-
-/* READ
-curl -X GET http://localhost:8099/api/booking/BK001
-*/
-
-app.get('/api/booking/:bookingid', async (req,res) => { //async programming way
-	if (req.params.bookingid) {
-		console.log(req.body)
-        let criteria = {};
-        criteria['bookingid'] = req.params.bookingid;
-		/*const criteria = { bookingid: req.params.bookingid }*/ //another coding way	
-		//try {
-			await client.connect();
-		    console.log("Connected successfully to server");
-			const db = client.db(dbName);
-			const docs = await findDocument(db, criteria);
-		    res.status(200).json(docs);
-		//} catch(err) {
-		//	console.error(err);
-		//} finally {
-		//	await client.close();
-		//    console.log("Closed DB connection");
-		//}
-	} else {
-        res.status(500).json({"error": "missing bookingid"}).end();
-    }
-});
-
-/*  UPDATE
-curl -X PUT -H "Content-Type: application/json" --data '{"mobile":"88888888"}' localhost:8099/api/booking/BK999
-
-curl -X PUT -F "mobile=99999999" localhost:8099/api/booking/BK999 
-*/
-app.put('/api/booking/:bookingid', async (req,res) => {
-    if (req.params.bookingid) {
-        console.log(req.body)
-		let criteria = {};
-        criteria['bookingid'] = req.params.bookingid;
-		//try {
-			await client.connect();
-			console.log("Connected successfully to server");
-		    const db = client.db(dbName);
-
-		    // const DOCID = {
-		    //     _id: ObjectId.createFromHexString(req.fields._id)
-		    // }
-
-		    let updateData = {
-		        bookingid: req.fields.bookingid || req.params.bookingid,
-		        mobile: req.fields.mobile,
-		    };
-
-		    if (req.files.filetoupload && req.files.filetoupload.size > 0) {
-		        const data = await fsPromises.readFile(req.files.filetoupload.path);
-		        updateData.photo = Buffer.from(data).toString('base64');
-		    }
-
-		    const results = await updateDocument(db, criteria, updateData);
-		    res.status(200).json(results).end();
-		//} catch(err) {
-		//	console.error(err);
-		//} finally {
-		//	await client.close();
-		//    console.log("Closed DB connection");
-		//}
-    } else {
-        res.status(500).json({"error": "missing bookingid"});
-    }
-})
-
-/*  DELETE
-curl -X DELETE localhost:8099/api/booking/BK999
-*/
-app.delete('/api/booking/:bookingid', async (req,res) => {
-    if (req.params.bookingid) {
-		console.log(req.body)
-		let criteria = {};
-        criteria['bookingid'] = req.params.bookingid;
-		//try {
-			await client.connect();
-			console.log("Connected successfully to server");
-		    const db = client.db(dbName);
-		    // let DOCID = { '_id': ObjectId.createFromHexString(req.query._id) };
-		    // let docs = await findDocument(db, DOCID);
-		    const results = await deleteDocument(db, criteria);
-            console.log(results)
-		    res.status(200).json(results).end();
-		//} catch(err) {
-		//	console.error(err);
-		//} finally {
-		//	await client.close();
-		//    console.log("Closed DB connection");
-		//}
-    } else {
-        res.status(500).json({"error": "missing bookingid"});       
-    }
-})
-//
-// End of Restful
-//
-
 app.get('/{*splat}', (req,res) => {
+    //res.status(404).send(`${req.path} - Unknown request!`);
     res.status(404).render('info', {message: `${req.path} - Unknown request!` });
+    /* info.ejs
+	<html>
+		<body>
+			<b><%= message %></b>
+			<p><a href="/">home</a></p>
+		</body>
+	</html>
+    */
 })
 
-const port = process.env.PORT || 8099;
-app.listen(port, () => {console.log(`Listening at http://localhost:${port}`);});
+app.listen(app.listen(process.env.PORT || 8099));
 
