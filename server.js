@@ -124,36 +124,35 @@ app.get('/logout', (req, res) => {
 
 // 路由：學生課程列表
 app.get('/list', requireLogin, async (req, res) => {
-  const userId = req.session.userId;
+  try {
+    const userId = req.session.userId;
+    const username = req.session.username;
 
-  // 取得使用者資料，假設 collection 名稱為 database_user
-  const userDoc = await db.collection('database_user').findOne({ user_id: userId });
+    const userDoc = await db.collection('database_user').findOne({ user_id: userId });
+    let coursesIdArray;
+    if (Array.isArray(userDoc?.course_id)) {
+      coursesIdArray = userDoc.course_id;
+    } else if (userDoc?.course_id != null) {
+      coursesIdArray = [userDoc.course_id];
+    } else {
+      coursesIdArray = [];
+    }
 
-  // 從 userDoc 取出 course_id，並確保它是陣列
-  let coursesIdArray;
-  if (Array.isArray(userDoc?.course_id)) {
-    coursesIdArray = userDoc.course_id;
-  } else if (userDoc?.course_id != null) {
-    coursesIdArray = [userDoc.course_id];
-  } else {
-    coursesIdArray = [];
+    const courses = coursesIdArray.length > 0
+      ? await db.collection('datebase_course').find({ course_id: { $in: coursesIdArray } }).toArray()
+      : [];
+
+    console.log('username:', username);
+    console.log('courses:', courses);
+
+    res.render('list', {
+      user: { user_id: userId, username },
+      course: courses
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server error');
   }
-
-  // 查詢對應的課程資料，只有在有課程時才查
-  const courses = coursesIdArray.length > 0
-    ? await db.collection('datebase_course').find({ course_id: { $in: coursesIdArray } }).toArray()
-    : [];
-
-  // 從 session 取得使用者名稱
-  const username = req.session.username;
-
-  res.render('list', {
-    user: {
-      user_id: userId,
-      username: username
-    },
-    course: courses
-  });
 });
 
 
@@ -263,6 +262,7 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
