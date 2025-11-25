@@ -27,7 +27,7 @@ app.use(session({
   secret: 'ole-system-secret-key-2025',
   resave: false,
   saveUninitialized: false,
-  cookie: { secure: false, maxAge: 24 * 3600 * 1000 }
+  // store: 需要用 redis 或其他方案，這裡用預設
 }));
 
 // 連線 MongoDB 並啟動伺服器
@@ -41,7 +41,7 @@ app.use(session({
       console.log(`Server listening on port ${port}`);
     });
   } catch (err) {
-    console.error('Failed to connect to MongoDB', err);
+    console.error('MongoDB 連線失敗:', err);
     process.exit(1);
   }
 })();
@@ -101,31 +101,19 @@ app.get('/list', requireLogin, async (req, res) => {
 });
 
 // 路由：課程詳細（含作業清單）
-app.get('/detail', requireLogin, async (req, res) => {
-  const courseId = req.query._id || req.query.course_id;
+app.get('/detail/:_id', requireLogin, async (req, res) => {
+  const courseId = req.params._id;
   let course;
   try {
     course = await db.collection('database_course').findOne({ _id: ObjectId(courseId) }) ||
              await db.collection('database_course').findOne({ course_id: courseId });
   } catch (err) {
-    return res.redirect('/info?message=Course not found');
+    return res.redirect('/info?message=課程不存在');
   }
-  if (!course) return res.redirect('/info?message=Course not found');
+  if (!course) return res.redirect('/info?message=課程不存在');
 
-  const assignments = await db.collection('database_assignment').find({ course_id: course.course_id }).toArray();
 
-  // 檢查是否已提交
-  const userId = req.session.userId;
-  const assignmentsWithStatus = await Promise.all(assignments.map(async (a) => {
-    const sub = await db.collection('datebase_submission').findOne({ assignment_id: a._id, user_id: userId });
-    return {
-      ...a,
-      submitted: !!sub,
-      submission: sub
-    };
-  }));
-
-  res.render('detail', { course, assignments: assignmentsWithStatus });
+  res.render('detail', { course });
 });
 
 // 路由：上傳作業頁面
@@ -201,4 +189,5 @@ app.get('/info', requireLogin, (req, res) => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Not Found` });
 });
+
 
