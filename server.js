@@ -103,6 +103,16 @@ app.post('/login', async (req, res) => {
     req.session.username = user.username;
     req.session.role = user.role;
 
+    // 確保 session 儲存完再跳轉
+    req.session.save(err => {
+      if (err) console.error('Session save error:', err);
+      res.redirect('/list');
+    });
+  } else {
+    res.render('login', { error: 'User ID or password incorrect' });
+  }
+});
+
 // 路由：登出
 app.get('/logout', (req, res) => {
   req.session.destroy(() => {
@@ -126,29 +136,26 @@ app.get('/logout', (req, res) => {
 app.get('/list', requireLogin, async (req, res) => {
   const userId = req.session.userId;
 
-  // 從 datebase_user 撈使用者資料
+  // 取得學生資料
   const userDoc = await db.collection('datebase_user').findOne({ user_id: userId });
 
-  // 取得並確保 course_id 是陣列
-  let coursesIdArray = [];
+  // 確保 course_id 是陣列
+  let courseIds = [];
   if (Array.isArray(userDoc?.course_id)) {
-    coursesIdArray = userDoc.course_id;
+    courseIds = userDoc.course_id;
   } else if (typeof userDoc?.course_id === 'string') {
-    // 只有單一字串時，轉成陣列
-    coursesIdArray = [userDoc.course_id];
+    courseIds = [userDoc.course_id];
   }
 
-  // 移除可能的重複值
-  coursesIdArray = Array.from(new Set(coursesIdArray));
-
-  // 查詢 datebase_course，course_id 是字串欄位
-  const courses = coursesIdArray.length > 0
-    ? await db.collection('datebase_course').find({ course_id: { $in: coursesIdArray } }).toArray()
+  // 以課程ID查詢課程資料
+  const courses = courseIds.length > 0
+    ? await db.collection('datebase_course').find({ course_id: { $in: courseIds } }).toArray()
     : [];
 
-  // 從 session 取得使用者名稱
+  // 取得用戶名稱
   const username = req.session.username;
 
+  // 傳給模板
   res.render('list', {
     user: {
       user_id: userId,
@@ -158,23 +165,6 @@ app.get('/list', requireLogin, async (req, res) => {
   });
 });
 
-app.post('/login', async (req, res) => {
-  const { user_id, password } = req.fields;
-  const user = await db.collection('database_user').findOne({ user_id });
-  if (user && user.password === password) {
-    req.session.userId = user.user_id;
-    req.session.username = user.username;
-    req.session.role = user.role;
-
-    // 確保 session 儲存完再跳轉
-    req.session.save(err => {
-      if (err) console.error('Session save error:', err);
-      res.redirect('/list');
-    });
-  } else {
-    res.render('login', { error: 'User ID or password incorrect' });
-  }
-});
 
 // 路由：課程詳細
 app.get('/detail', requireLogin, async (req, res) => {
@@ -282,6 +272,7 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
