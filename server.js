@@ -4,7 +4,6 @@ const formidable = require('express-formidable');
 const fsPromises = require('fs').promises;
 const path = require('path');
 
-const app = express();
 
 const { MongoClient, ObjectId } = require('mongodb');
 
@@ -317,6 +316,7 @@ app.delete('/api/assignments/:id', (req, res) => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
