@@ -5,6 +5,14 @@ const fsPromises = require('fs').promises;
 const path = require('path');
 const { MongoClient, ObjectId } = require('mongodb');
 
+// 你的其他設定...
+
+(async () => {
+  await client.connect();
+  db = client.db(dbName);
+  console.log('MongoDB connected');
+
+
 const app = express();
 
 const mongourl = 'mongodb+srv://carolyan360_db_user:01110118@cluster0.55hozbc.mongodb.net/?appName=Cluster0';
@@ -16,13 +24,6 @@ const collectioncourse = 'database_course';
 const collectionasm = 'database_assignment';
 const collectionsub = 'datebase_submission'; 
 
-
-
-let db;
-client.connect().then(() => {
-  db = client.db(dbName);
-  console.log('MongoDB connected');
-});
 
 const userDoc = await db.collection('database_user').findOne({ user_id: userId });
 let userCourses = [];
@@ -217,6 +218,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Not Found` });
 });
+
 
 
 
