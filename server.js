@@ -214,33 +214,20 @@ app.post('/submissions/create', requireLogin, async (req, res) => {
   res.redirect('/detail?course_id=' + req.query.course_id);
 });
 
-// 路由：我的提交
-app.get('/submissions/my-submissions', requireLogin, async (req, res) => {
-  const userId = req.session.userId;
-  const submissions = await db.collection('datebase_submission').find({ user_id: userId }).toArray();
-  res.render('my-submissions', { submissions, user: { user_id: userId, username: req.session.username } });
-});
-
-// 路由：單一提交細節
-app.get('/submissions/detail/:submissionId', requireLogin, async (req, res) => {
-  const subId = req.params.submissionId;
-  const submission = await db.collection('datebase_submission').findOne({ _id: ObjectId(subId), user_id: req.session.userId });
-  if (!submission) return res.redirect('/info?message=Submission not found');
-  res.render('detail', { submission });
-});
-
 // 路由：刪除提交
-app.get('/submissions/delete/:submission_id', requireLogin, async (req, res) => {
-  const subId = req.params.submission_id;
-  const submission = await db.collection('datebase_submission').findOne({ _id: ObjectId(subId), user_id: req.session.userId });
-  if (!submission) return res.redirect('/info?message=Submission not found');
-  res.render('delete', { submission });
-});
-
 app.post('/submissions/delete', requireLogin, async (req, res) => {
   const { submissionId } = req.fields;
-  await db.collection('datebase_submission').deleteOne({ _id: ObjectId(submissionId), user_id: req.session.userId });
-  res.redirect('/info?message=Submission deleted');
+  // 先找出要刪除的檔案路徑
+  const sub = await db.collection('database_submission').findOne({ _id: ObjectId(submissionId) });
+  if (!sub) {
+    return res.redirect('/info?message=Submission not found');
+  }
+  // 刪除檔案
+  const filePath = path.join(__dirname, 'public', sub.file_path);
+  await fsPromises.unlink(filePath).catch(() => {});
+  // 刪除資料庫記錄
+  await db.collection('database_submission').deleteOne({ _id: ObjectId(submissionId) });
+  res.redirect('/detail?course_id=' + req.query.course_id);
 });
 
 // 顯示訊息
@@ -290,6 +277,7 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
