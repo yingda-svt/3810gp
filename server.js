@@ -27,7 +27,6 @@ app.use(session({
   secret: 'ole-system-secret-key-2025',
   resave: false,
   saveUninitialized: false,
-  store: MongoStore.create({ mongoUrl: mongourl, dbName: '3810gp' }),
   cookie: { secure: false, maxAge: 24 * 3600 * 1000 }
 }));
 
@@ -201,6 +200,7 @@ app.get('/info', requireLogin, (req, res) => {
 app.use((req, res) => {
   res.status(404).render('info', { message: `${req.path} - Not Found` });
 });
+
 
 
 
