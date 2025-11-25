@@ -1,39 +1,15 @@
-<!DOCTYPE html>
 <html>
-<head>
-    <meta charset="UTF-8">
-    <title>Listing Course</title>
-
-</head>
-<body>
-    <h1>Welcome OLE  <%= user.username %></h1>
-    <hr/>
-    <h2>Your user ID is <%= user.user_id %></h2>
-    <h2>Your username is <%= user.username %></h2>
-    <form action="/list" method="POST">
-    <div>
-        <h2>My Course</h2>
-        <% for (var c of course) { %>
-            <li><a href="/detail?_id=<%= c._id %>"><%= c.course_id %> <%= c.course_name %></a>
-            </li>
+    <body>
+        <H1>Welcome, <%= user.name %></H1>
+		<hr/>
+		<p>You logged in through <b><%= user.type %></b>, user ID is <%= user.id %></p>
+        <H2>Bookings (<%= nBookings %>)</H2>
+        <ul>
+            <% for (var b of bookings) { %>
+            <li>Booking ID: <a href="/details?_id=<%= b._id %>"><%= b.bookingid %></a></li>
             <% } %>
-    </form>
-    </div>
-    <p><a href='/logout'>Logout</a></p>
-</body>
-
+        </ul>
+        <a href='/create'>Create a New Booking</a>
+		<p><a href='/logout'>Logout</a></p>
+    </body>
 </html>
-
-
-
-
-
-
-
-
-
-
-
-
-
-
