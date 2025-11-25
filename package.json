@@ -1,6 +1,7 @@
 {
     "name": "server",
     "description": "MVC Booking Project Demo",
+    "type": "module",
     "author": "Cloud381 Instructor",
     "version": "0.0.1",
     "dependencies": {
@@ -16,6 +17,7 @@
         "start": "node server"
     }
 }
+
 
 
 
