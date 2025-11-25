@@ -43,8 +43,6 @@ app.use(session({
   cookie: { secure: false, maxAge: 24*3600*1000 }
 }));
 
-// 設定 multer
-const upload = multer({ dest: 'public/uploads/' });
 
 // 需要登入的 middleware
 const requireLogin = (req, res, next) => {
@@ -140,27 +138,35 @@ app.get('/submissions/create/:assignment_id', requireLogin, async (req, res) => 
 });
 
 // 7. 上傳作業
-app.post('/submissions/create', requireLogin, upload.single('submissionFile'), async (req, res) => {
+app.post('/submissions/create', requireLogin, async (req, res) => {
   const { assignmentId, userId } = req.fields;
-  const file = req.file;
+  const file = req.files.submissionFile;
 
   if (!file) {
     return res.redirect('/info?message=File upload failed');
   }
 
+  const uploadDir = path.join(__dirname, 'public/uploads');
+  const filename = Date.now() + '-' + file.name; // 加點時間戳避免重複
+  const newPath = path.join(uploadDir, filename);
+
+  // 移動檔案
+  await fsPromises.rename(file.path, newPath);
+
+  // 儲存檔案資訊到資料庫
   await db.collection(collectionsub).insertOne({
     submission_id: new ObjectId().toString(),
     assignment_id: assignmentId,
     user_id: userId,
     submission_date: new Date(),
-    file_path: '/uploads/' + file.filename,
-    file_type: file.mimetype,
+    file_path: '/uploads/' + filename,
+    file_type: file.type,
     file_size: file.size,
     grade: null
   });
+
   res.redirect('/info?message=Submission successful');
 });
-
 
 // 9. 查看單個提交細節
 app.get('/submissions/detail/:submissionId', requireLogin, async (req, res) => {
@@ -201,3 +207,4 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Not Found` });
 });
+
