@@ -3,19 +3,21 @@
     "description": "MVC Booking Project Demo",
     "author": "Cloud381 Instructor",
     "version": "0.0.1",
-    "dependencies": {
-    "ejs": "3.1.10",
-    "express": "4.19.2",
-    "express-formidable": "*",
-    "mongodb": "6.9.0",
-    "nodemon": "2.0.22",
-    "express-session": "^1.17.3"
-},
+   "dependencies": {
+  "ejs": "3.1.10",
+  "express": "4.19.2",
+  "express-formidable": "*",
+  "mongodb": "6.9.0",
+  "multer": "^1.4.5-latest",
+  "nodemon": "2.0.22",
+  "express-session": "^1.17.3"
+}
     "engine": "node >= 16.0.0",
     "scripts": {
         "start": "node server"
     }
 }
+
 
 
 
