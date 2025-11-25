@@ -171,14 +171,11 @@ app.get('/detail', requireLogin, async (req, res) => {
 
   try {
     // 取得該課程的所有作業
-    const assignments = await db
-      .collection('database_assignment')
-      .find({ course_id: courseId })
-      .toArray();
-
-    res.render('detail', {
-      course_id: courseId,
-      assignments
+    const assignments = await db.collection('3810gp.datebase_assignment').find({ course_id: courseId }).toArray();
+res.render('detail', {
+  course: { course_id: courseId },
+  assignments: assignments
+});
     });
   } catch (err) {
     console.error('Error in /detail:', err);
@@ -277,6 +274,7 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
