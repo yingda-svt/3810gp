@@ -8,34 +8,59 @@ const { MongoClient, ObjectId } = require('mongodb');
 const app = express();
 const port = process.env.PORT || 8099;
 
-// MongoDB 連線設定
-const mongourl = 'mongodb+srv://carolyan360_db_user:01110118@cluster0.55hozbc.mongodb.net/?appName=Cluster0';
+// MongoDB 設定
+const mongourl = 'mongodb+srv://carolyan360_db_user:01110118@cluster0.55hozbc.mongodb.net/?appName=Cluster0'; // 請填入你的連線字串
 const dbName = '3810gp';
 
 let db;
 const client = new MongoClient(mongourl);
 
-// 使用中間件
+// 設定 view engine
 app.set('view engine', 'ejs');
 app.use(express.static('public'));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
-app.use(formidable()); // 處理 form-data（含檔案上傳）
+app.use(formidable()); // 解析 form-data
 
-// session 設定
+// 自訂 Session Store：不使用內建 MemoryStore，避免警告
+class CustomMemoryStore extends session.Store {
+  constructor() {
+    super();
+    this.sessions = new Map();
+  }
+  get(sid, callback) {
+    const sess = this.sessions.get(sid);
+    callback(null, sess ? JSON.parse(JSON.stringify(sess)) : null);
+  }
+  set(sid, sess, callback) {
+    this.sessions.set(sid, JSON.parse(JSON.stringify(sess)));
+    callback && callback(null);
+  }
+  destroy(sid, callback) {
+    this.sessions.delete(sid);
+    callback && callback(null);
+  }
+  touch(sid, sess, callback) {
+    this.set(sid, sess, callback);
+  }
+}
+
+// 使用自訂的 session store
+const myStore = new CustomMemoryStore();
 app.use(session({
   secret: 'ole-system-secret-key-2025',
   resave: false,
   saveUninitialized: false,
+  store: myStore,
   cookie: { secure: false, maxAge: 24 * 3600 * 1000 }
 }));
 
-// 連線 MongoDB 並啟動伺服器
+// 連線MongoDB
 (async () => {
   try {
     await client.connect();
     db = client.db(dbName);
-    console.log('MongoDB connected');
+    console.log('MongoDB 連線成功');
 
     app.listen(port, () => {
       console.log(`Server listening on port ${port}`);
@@ -46,7 +71,7 @@ app.use(session({
   }
 })();
 
-// Middleware：登入檢查
+// 中介軟體：驗證登入
 function requireLogin(req, res, next) {
   if (req.session && req.session.userId) {
     next();
@@ -94,12 +119,11 @@ app.get('/list', requireLogin, async (req, res) => {
   const userId = req.session.userId;
   const userDoc = await db.collection('database_user').findOne({ user_id: userId });
   const coursesIdArray = userDoc ? userDoc.course : [];
-
   const courses = await db.collection('database_course').find({ course_id: { $in: coursesIdArray } }).toArray();
-
   res.render('list', { user: { user_id: userId, username: req.session.username }, course: courses });
 });
 
+// 路由：課程詳細
 app.get('/detail', requireLogin, async (req, res) => {
   const courseId = req.query._id || req.query.course_id;
   let course;
@@ -190,19 +214,18 @@ app.post('/submissions/delete', requireLogin, async (req, res) => {
   res.redirect('/info?message=Submission deleted');
 });
 
-// 顯示訊息頁面
+// 顯示訊息
 app.get('/info', requireLogin, (req, res) => {
   const message = req.query.message || 'Operation completed';
   res.render('info', { message });
 });
 
-// 404 處理：改用 app.use 避免 pathToRegexp 解析問題
+// 404：用 app.use() 來捕捉所有未定義路由，避免 PathError
 app.use((req, res) => {
   res.status(404).render('info', { message: `${req.path} - Not Found` });
 });
 
-
-
-
-
-
+// 啟動伺服器
+app.listen(port, () => {
+  console.log(`Server listening on port ${port}`);
+});
