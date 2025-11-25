@@ -132,23 +132,20 @@ app.get('/list', requireLogin, async (req, res) => {
     const userId = req.session.userId;
     const username = req.session.username;
 
-    const userDoc = await db.collection('database_user').findOne({ user_id: userId });
-    if (!userDoc) {
-      return res.status(404).send('User data not found');
-    }
+   const userDoc = await db.collection('database_user').findOne({ user_id: userId });
+let coursesIdArray;
+if (Array.isArray(userDoc?.course_id)) {
+  coursesIdArray = userDoc.course_id;
+} else if (userDoc?.course_id != null) {
+  coursesIdArray = [userDoc.course_id];
+} else {
+  coursesIdArray = [];
+}
 
-    let coursesIdArray;
-    if (Array.isArray(userDoc?.course_id)) {
-      coursesIdArray = userDoc.course_id;
-    } else if (userDoc?.course_id != null) {
-      coursesIdArray = [userDoc.course_id];
-    } else {
-      coursesIdArray = [];
-    }
-
-    const courses = coursesIdArray.length > 0
-      ? await db.collection('datebase_course').find({ course_id: { $in: coursesIdArray } }).toArray()
-      : [];
+// 根據 coursesIdArray 取得課程資料
+const courses = coursesIdArray.length > 0
+  ? await db.collection('datebase_course').find({ course_id: { $in: coursesIdArray } }).toArray()
+  : [];
 
     // 重要：加入 console.log 追蹤
     console.log('userId:', userId);
@@ -309,6 +306,7 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
