@@ -90,6 +90,10 @@ app.get('/', (req, res) => {
   }
 });
 
+app.get('/login', (req, res) => {
+  res.render('login', { error: null });
+});
+
 // 路由：登入
 app.post('/login', async (req, res) => {
   const { user_id, password } = req.fields;
@@ -233,4 +237,5 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
