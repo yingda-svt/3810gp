@@ -1,15 +1,6 @@
 <html>
     <body>
-        <H1>Welcome, <%= user.name %></H1>
-		<hr/>
-		<p>You logged in through <b><%= user.type %></b>, user ID is <%= user.id %></p>
-        <H2>Bookings (<%= nBookings %>)</H2>
-        <ul>
-            <% for (var b of bookings) { %>
-            <li>Booking ID: <a href="/details?_id=<%= b._id %>"><%= b.bookingid %></a></li>
-            <% } %>
-        </ul>
-        <a href='/create'>Create a New Booking</a>
-		<p><a href='/logout'>Logout</a></p>
+		<H1>Hello, this is a login page. </H1>
+		<a href='/auth/facebook'>Login through facebook</a>
     </body>
 </html>
