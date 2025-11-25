@@ -150,8 +150,11 @@ app.get('/list', requireLogin, async (req, res) => {
       ? await db.collection('datebase_course').find({ course_id: { $in: coursesIdArray } }).toArray()
       : [];
 
-    // 測試輸出
+    // 重要：加入 console.log 追蹤
+    console.log('userId:', userId);
     console.log('username:', username);
+    console.log('userDoc:', userDoc);
+    console.log('coursesIdArray:', coursesIdArray);
     console.log('courses:', courses);
 
     res.render('list', {
@@ -163,7 +166,7 @@ app.get('/list', requireLogin, async (req, res) => {
     });
   } catch (err) {
     console.error('Error in /list:', err);
-    res.status(500).send('Server error');
+    res.status(500).send('Server error: ' + err.message);
   }
 });
 
@@ -274,6 +277,7 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
