@@ -1,12 +1,15 @@
-var 
-	express             = require('express'),
-    app                 = express(),
-    session             = require('express-session'),
-	formidable 			= require('express-formidable'),
-	fsPromises 			= require('fs').promises;
+const express = require('express');
+const session = require('express-session');
+const formidable = require('express-formidable');
+const fsPromises = require('fs').promises;
+const path = require('path');
 
-const path          = require('path');
+const app = express();
 
+const { MongoClient, ObjectId } = require('mongodb');
+
+const __filename = __filename; // 這在 CommonJS 裡已預設
+const __dirname = path.dirname(__filename);
 // 其他程式碼...
 
 const mongourl = 'mongodb+srv://carolyan360_db_user:01110118@cluster0.55hozbc.mongodb.net/?appName=Cluster0'; // Your MongoDB connection string
@@ -315,6 +318,7 @@ app.delete('/api/assignments/:id', (req, res) => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
