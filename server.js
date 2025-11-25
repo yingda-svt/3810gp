@@ -129,12 +129,27 @@ app.get('/dashboard', requireLogin, (req, res) => {
 });
 
 
-app.get('/list', requireLogin, (req, res) => {
-  res.render('list', { 
-    user: { user_id: req.session.userId, username: req.session.username },
-    course: mockCourses
-  });
+app.get('/list', requireLogin, async (req, res) => {
+  try {
+    const userDoc = await db.collection(collectionuser).findOne({ user_id: req.session.userId });
+    if (!userDoc) {
+      return res.redirect('/info?message=User not found');
+    }
+    const courseIds = userDoc.course_id; // 這是陣列，例如 ["2202", "2203"]
+    // 查詢課程資料，取得所有符合的課程
+    const courses = await db.collection(collectionuser).find({ course_id: { $in: courseIds } }).toArray();
+
+    res.render('list', {
+      user: { user_id: req.session.userId, username: req.session.username },
+      course: courses
+    });
+  } catch (err) {
+    console.error(err);
+    res.redirect('/info?message=Error loading courses');
+  }
 });
+
+const submissions = await db.collection('datebase_submission').find({ user_id: req.session.userId }).toArray();
 
 // 取得課程詳情，透過 detail.ejs 顯示 submission 資料
 app.get('/detail', requireLogin, (req, res) => {
@@ -312,6 +327,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
