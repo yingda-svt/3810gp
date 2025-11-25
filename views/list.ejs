@@ -14,8 +14,8 @@
     <div>
         <h2>My Course</h2>
 <ul>
-        <% for (var c of course) { %>
-            <li><a href="/detail?_id=<%= c._id %>"><%= c.course_id %> <%= c.course_name %></a></li>
+         <% if (course && course.length > 0) { %>
+            <li><%= c.course_id %> - <%= c.course_name %></li>
 <% } %>
 <% } else { %>
     <li>No courses found.</li>
@@ -27,4 +27,5 @@
 </body>
 
 </html>
+
 
