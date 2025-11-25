@@ -125,10 +125,30 @@ app.get('/logout', (req, res) => {
 // 路由：學生課程列表
 app.get('/list', requireLogin, async (req, res) => {
   const userId = req.session.userId;
+  const username = req.session.username; // 從 session 取得
   const userDoc = await db.collection('database_user').findOne({ user_id: userId });
   const coursesIdArray = userDoc ? userDoc.course : [];
   const courses = await db.collection('database_course').find({ course_id: { $in: coursesIdArray } }).toArray();
-  res.render('list', { user: { user_id: userId, username: req.session.username }, course: courses });
+
+  res.render('list', { username, courses });
+});
+
+app.post('/login', async (req, res) => {
+  const { user_id, password } = req.fields;
+  const user = await db.collection('database_user').findOne({ user_id });
+  if (user && user.password === password) {
+    req.session.userId = user.user_id;
+    req.session.username = user.username;
+    req.session.role = user.role;
+
+    // 確保 session 儲存完再跳轉
+    req.session.save(err => {
+      if (err) console.error('Session save error:', err);
+      res.redirect('/list');
+    });
+  } else {
+    res.render('login', { error: 'User ID or password incorrect' });
+  }
 });
 
 // 路由：課程詳細
@@ -237,5 +257,6 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
