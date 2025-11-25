@@ -30,40 +30,11 @@ app.use(session({
   cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 }
 }));
 
-// 模拟数据
-const mockUsers = [
-  { user_id: 'student1', password: '123', username: 'Test Student', role: 'student' },
-  { user_id: 'teacher1', password: '123', username: 'Test Teacher', role: 'teacher' }
-];
-
-const mockCourses = [
-  { _id: '1', course_id: 'CS101', course_name: 'Introduction to Programming' },
-  { _id: '2', course_id: 'MATH201', course_name: 'Advanced Mathematics' }
-];
-
-const mockAssignments = [
-  { 
-    assignment_id: 'ASS001', 
-    title: 'Programming Assignment 1', 
-    course_name: 'Introduction to Programming',
-    due_date: new Date('2025-12-31')
-  }
-];
-
-const mockSubmissions = [
-	{
-  submission_id: 'SUB123456',
-  assignment_title: 'Programming Assignment 1',
-  course_name: 'Introduction to Programming',
-  assignment_due_date: new Date('2025-12-31'),
-  submission_date: new Date(),
-  file_path: 'uploads/file1.pdf',
-  file_type: 'application/pdf',
-  file_size: 102400, // bytes
-  grade: null,
-  user_id: 'student1'
-}
-];
+let db;
+client.connect().then(() => {
+  db = client.db(dbName);
+  console.log('Connected to MongoDB');
+});
 
 // 认证中间件
 const requireLogin = (req, res, next) => {
@@ -120,29 +91,36 @@ app.get('/dashboard', requireLogin, (req, res) => {
   });
 });
 
+app.get('/list', requireLogin, async (req, res) => {
+  const userId = req.session.userId;
+  const userDoc = await db.collection('database_user').findOne({ user_id: userId });
+  const userCourses = userDoc ? userDoc.course : [];
 
-app.get('/list', requireLogin, (req, res) => {
-  res.render('list', { 
-    user: { user_id: req.session.userId, username: req.session.username },
-    course: mockCourses
-  });
+  const courses = await db.collection('database_course').find({ course_id: { $in: userCourses } }).toArray();
+
+  res.render('list', { user: { user_id: userId, username: req.session.username }, course: courses });
 });
 
-// 取得課程詳情，透過 detail.ejs 顯示 submission 資料
-app.get('/detail', requireLogin, (req, res) => {
-  // 可能来自 list.ejs 的兩種參數名稱：_id 或 course_id
-  const idParam = req.query._id || req.query.course_id;
-  console.log('detail idParam:', idParam);
+app.get('/detail', requireLogin, async (req, res) => {
+  const courseId = req.query._id || req.query.course_id;
+  const course = await db.collection('database_course').findOne({ _id: ObjectId(courseId) }) ||
+                 await db.collection('database_course').findOne({ course_id: courseId });
+  if (!course) return res.redirect('/info?message=Course not found');
 
-  let course = mockCourses.find(c => c._id === idParam);
+  const assignments = await db.collection('database_assignment').find({ course_id: course.course_id }).toArray();
 
-  if (!course && idParam) {
-    course = mockCourses.find(c => c.course_id === idParam);
-  }
+  const userId = req.session.userId;
+  const assignmentsWithStatus = await Promise.all(assignments.map(async (a) => {
+    const sub = await db.collection('datebase_submission').findOne({ assignment_id: a._id, user_id: userId });
+    return {
+      ...a,
+      submitted: !!sub,
+      submission: sub
+    };
+  }));
 
-  if (!course) {
-    return res.redirect('/info?message=Course not found');
-  }
+  res.render('detail', { course, assignments: assignmentsWithStatus });
+});
 
   const associatedAssignment = mockAssignments.find(a => a.course_name === course.course_name);
 
@@ -161,6 +139,7 @@ app.get('/detail', requireLogin, (req, res) => {
 
   res.render('detail', { submission: submission });
 });
+
 app.get('/dashboard', requireLogin, (req, res) => {
   res.render('dashboard', { 
     user: { 
@@ -171,36 +150,37 @@ app.get('/dashboard', requireLogin, (req, res) => {
 });
 
 
-app.get('/submissions/create', requireLogin, (req, res) => {
-  res.render('create', { 
-    assignments: mockAssignments,
-    loggedInUser: { user_id: req.session.userId }
-  });
+app.get('/submissions/create/:assignment_id', requireLogin, async (req, res) => {
+  const assignmentId = req.params.assignment_id;
+  const assignment = await db.collection('database_assignment').findOne({ _id: ObjectId(assignmentId) });
+  res.render('create', { assignment, loggedInUser: { user_id: req.session.userId } });
 });
 
-
-
-app.post('/submissions/create', requireLogin, (req, res) => {
+app.post('/submissions/create', requireLogin, async (req, res) => {
   const { assignmentId, userId } = req.fields;
-  
-  const assignment = mockAssignments.find(a => a.assignment_id === assignmentId);
-  
-  const newSubmission = {
-    submission_id: 'SUB' + Date.now(),
+  const file = req.files.submissionFile;
+
+  // Save file to server (ensure you handle file upload properly)
+  const uploadPath = path.join(__dirname, 'public/uploads', file.name);
+  await fsPromises.rename(file.path, uploadPath);
+
+  await db.collection('datebase_submission').insertOne({
+    submission_id: new ObjectId().toString(),
     assignment_id: assignmentId,
     user_id: userId,
     submission_date: new Date(),
-    file_path: req.files.submissionFile ? req.files.submissionFile.name : 'no-file',
-    file_size: req.files.submissionFile ? req.files.submissionFile.size : 0,
-    file_type: 'test',
-    grade: null,
-    assignment_title: assignment ? assignment.title : 'Unknown',
-    course_name: assignment ? assignment.course_name : 'Unknown'
-  };
-  
-  mockSubmissions.push(newSubmission);
-  res.redirect('/info?message=Assignment submitted successfully! submitted ID: ' + newSubmission.submission_id);
+    file_path: '/uploads/' + file.name,
+    file_type: file.type,
+    file_size: file.size,
+    grade: null
+  });
+
+  res.redirect('/info?message=Submission successful');
 });
+
+
+
+
 
 app.get('/submissions/my-submissions', requireLogin, (req, res) => {
   const userSubmissions = mockSubmissions.filter(s => s.user_id === req.session.userId);
@@ -210,42 +190,18 @@ app.get('/submissions/my-submissions', requireLogin, (req, res) => {
   });
 });
 
-app.get('/submissions/detail/:submissionId', requireLogin, (req, res) => {
-  const submission = mockSubmissions.find(s => 
-    s.submission_id === req.params.submissionId && s.user_id === req.session.userId
-  );
-  
-  if (submission) {
-    res.render('detail', { submission: submission });
-  } else {
-    res.redirect('/info?message=Submission record not found');
-  }
+app.get('/submissions/delete/:submission_id', requireLogin, async (req, res) => {
+  const subId = req.params.submission_id;
+  const submission = await db.collection('datebase_submission').findOne({ _id: ObjectId(subId), user_id: req.session.userId });
+  if (!submission) return res.redirect('/info?message=Submission not found');
+
+  res.render('delete', { submission });
 });
 
-app.get('/submissions/delete/:submissionId', requireLogin, (req, res) => {
-  const submission = mockSubmissions.find(s => 
-    s.submission_id === req.params.submissionId && s.user_id === req.session.userId
-  );
-  
-  if (submission) {
-    res.render('delete', { submission: submission });
-  } else {
-    res.redirect('/info?message=Submission record not found');
-  }
-});
-
-app.post('/submissions/delete', requireLogin, (req, res) => {
+app.post('/submissions/delete', requireLogin, async (req, res) => {
   const { submissionId } = req.fields;
-  const index = mockSubmissions.findIndex(s => 
-    s.submission_id === submissionId && s.user_id === req.session.userId
-  );
-  
-  if (index !== -1) {
-    mockSubmissions.splice(index, 1);
-    res.redirect('/info?message=Delete submission successful');
-  } else {
-    res.redirect('/info?message=Deletion failed: Submission record not found');
-  }
+  await db.collection('datebase_submission').deleteOne({ _id: ObjectId(submissionId), user_id: req.session.userId });
+  res.redirect('/info?message=Submission deleted');
 });
 
 app.get('/info', requireLogin, (req, res) => {
@@ -304,6 +260,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
