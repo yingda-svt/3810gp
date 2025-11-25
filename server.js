@@ -1,12 +1,7 @@
-import express from 'express';
-import session from 'express-session';
-import formidable from 'express-formidable';
-import { promises as fsPromises } from 'fs';
-import { MongoClient, ObjectId } from 'mongodb';
-import path from 'path';
 import { fileURLToPath } from 'url';
+import path from 'path';
 
-const __filename = __filename; // 這在 CommonJS 裡已預設
+const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const mongourl = 'mongodb+srv://carolyan360_db_user:01110118@cluster0.55hozbc.mongodb.net/?appName=Cluster0'; // Your MongoDB connection string
@@ -315,6 +310,7 @@ app.delete('/api/assignments/:id', (req, res) => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
