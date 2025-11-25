@@ -13,7 +13,7 @@ const mongourl = 'mongodb+srv://carolyan360_db_user:01110118@cluster0.55hozbc.mo
 const dbName = '3810gp';
 
 let db;
-const client = new MongoClient(mongourl, { useUnifiedTopology: true });
+const client = new MongoClient(mongourl);
 
 // 使用中間件
 app.set('view engine', 'ejs');
@@ -201,3 +201,4 @@ app.get('/info', requireLogin, (req, res) => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Not Found` });
 });
+
