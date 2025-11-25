@@ -98,19 +98,23 @@ app.get('/login', (req, res) => {
 // 路由：登入
 app.post('/login', async (req, res) => {
   const { user_id, password } = req.fields;
-  const user = await db.collection('database_user').findOne({ user_id });
-  if (user && user.password === password) {
-    req.session.userId = user.user_id;
-    req.session.username = user.username;
-    req.session.role = user.role;
+  try {
+    const user = await db.collection('database_user').findOne({ user_id });
+    if (user && user.password === password) {
+      req.session.userId = user.user_id;
+      req.session.username = user.username;
+      req.session.role = user.role;
 
-    // 確保 session 儲存完再跳轉
-req.session.save(err => {
-   if (err) console.error('Session save error:', err);
-    res.redirect('/list');
-    });
-  } else {
-    res.render('login', { error: 'User ID or password incorrect' });
+      req.session.save(err => {
+        if (err) console.error('Session save error:', err);
+        res.redirect('/list');
+      });
+    } else {
+      res.render('login', { error: 'User ID or password incorrect' });
+    }
+  } catch (err) {
+    console.error('Login Error:', err);
+    res.status(500).send('Server error');
   }
 });
 
@@ -129,6 +133,10 @@ app.get('/list', requireLogin, async (req, res) => {
     const username = req.session.username;
 
     const userDoc = await db.collection('database_user').findOne({ user_id: userId });
+    if (!userDoc) {
+      return res.status(404).send('User data not found');
+    }
+
     let coursesIdArray;
     if (Array.isArray(userDoc?.course_id)) {
       coursesIdArray = userDoc.course_id;
@@ -142,15 +150,19 @@ app.get('/list', requireLogin, async (req, res) => {
       ? await db.collection('datebase_course').find({ course_id: { $in: coursesIdArray } }).toArray()
       : [];
 
+    // 測試輸出
     console.log('username:', username);
     console.log('courses:', courses);
 
     res.render('list', {
-      user: { user_id: userId, username },
+      user: {
+        user_id: userId,
+        username: username
+      },
       course: courses
     });
   } catch (err) {
-    console.error(err);
+    console.error('Error in /list:', err);
     res.status(500).send('Server error');
   }
 });
@@ -262,6 +274,7 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
