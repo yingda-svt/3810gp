@@ -97,9 +97,8 @@ app.post('/login', async (req, res) => {
       // 驗證成功，設定 session
       req.session.userId = user.user_id;
       req.session.username = user.username;
-      req.session.role = user.role;
-      
-      res.redirect('/login'); // 或其他頁面
+      req.session.role = user.role;      
+      res.redirect('/list'); // 或其他頁面
     } else {
       // 驗證失敗
       res.render('login', { error: 'User ID or password incorrect' });
@@ -304,6 +303,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
