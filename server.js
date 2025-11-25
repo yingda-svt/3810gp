@@ -1,15 +1,16 @@
-import express from 'express';
-import session from 'express-session';
-import formidable from 'express-formidable';
-import { promises as fsPromises } from 'fs';
-import { MongoClient, ObjectId } from 'mongodb';
-import path from 'path';
-import { fileURLToPath } from 'url';
+var 
+	express             = require('express'),
+    app                 = express(),
+    session             = require('express-session'),
+	formidable 			= require('express-formidable'),
+	fsPromises 			= require('fs').promises;
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-const app = express(); // <-- 加在這裡
+const path          = require('path');
+const { MongoClient, ObjectId } = require('mongodb');
+const mongourl = 'mongodb+srv://s1404001:14040010@cluster0.llkhaon.mongodb.net/?appName=Cluster0'; // Your MongoDB connection string
+const client = new MongoClient(mongourl);
+const dbName = 'samples_mflix';
+const collectionName = 'comments';
 
 // 其他程式碼...
 
@@ -139,24 +140,11 @@ app.get('/dashboard', requireLogin, (req, res) => {
 });
 
 
-app.get('/list', requireLogin, async (req, res) => {
-  try {
-    const userDoc = await db.collection(collectionuser).findOne({ user_id: req.session.userId });
-    if (!userDoc) {
-      return res.redirect('/info?message=User not found');
-    }
-    const courseIds = userDoc.course_id; // 這是陣列，例如 ["2202", "2203"]
-    // 查詢課程資料，取得所有符合的課程
-    const courses = await db.collection(collectionuser).find({ course_id: { $in: courseIds } }).toArray();
-
-    res.render('list', {
-      user: { user_id: req.session.userId, username: req.session.username },
-      course: courses
-    });
-  } catch (err) {
-    console.error(err);
-    res.redirect('/info?message=Error loading courses');
-  }
+app.get('/list', requireLogin, (req, res) => {
+  res.render('list', { 
+    user: { user_id: req.session.userId, username: req.session.username },
+    course: mockCourses
+  });
 });
 
 const submissions = await db.collection('datebase_submission').find({ user_id: req.session.userId }).toArray();
@@ -332,6 +320,7 @@ app.delete('/api/assignments/:id', (req, res) => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
