@@ -4,7 +4,6 @@ const formidable = require('express-formidable');
 const fsPromises = require('fs').promises;
 const path = require('path');
 const { MongoClient, ObjectId } = require('mongodb');
-const multer = require('multer');
 
 const app = express();
 
@@ -207,4 +206,5 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Not Found` });
 });
+
 
