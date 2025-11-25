@@ -1,14 +1,36 @@
+<!DOCTYPE html>
 <html>
-    <body>
-        <H2>Booking Details</H2><hr>
-        <p>Booking ID: <%= booking.bookingid %></p>
-        <p>Mobile: <%= booking.mobile %></p>
+<head>
+    <meta charset="UTF-8">
+    <title>Submission Details - <%= submission.assignment_title %></title>
+</head>
+<body>
+    <h1>Homework Submission Details</h1>
+    
+    <p><strong>Associated Assignment:</strong> <%= submission.assignment_title %></p>
+    <p><strong>Course Name:</strong> <%= submission.course_name %></p>
+    <p><strong>Assignment Due Date:</strong> <%= new Date(submission.assignment_due_date).toLocaleDateString() %></p>
+    <p><strong>Your Submission Date:</strong> <%= new Date(submission.submission_date).toLocaleString() %></p>
+    <p><strong>Submitted File Path:</strong> <%= submission.file_path %></p>
+    <p><strong>File Type:</strong> <%= submission.file_type || "Unknown" %></p>
+    <p><strong>File Size:</strong>
+        <% 
+            const sizeInKB = (submission.file_size / 1024).toFixed(2);
+            const sizeInMB = (sizeInKB / 1024).toFixed(2);
+            const readableSize = sizeInMB >= 1 ? `${sizeInMB} MB` : `${sizeInKB} KB`;
+        %>
+        <%= readableSize %>
+    </p>
+    <p><strong>Grade:</strong> <%= submission.grade || "Your submission is pending grading" %></p>
 
-        <% if (booking.photo) { %>
-            <img src="data:image/jpg;base64, <%= booking.photo %>"><br>
-        <% } %>
+    <p>
+        <a href="/submissions/delete/<%= submission.submission_id %>">Delete This Submission</a>
+        <a href="/submissions/create/<%= submission.submission_id %>">Upload This Submission</a>
+    </p>
 
-        <a href="/edit?_id=<%= booking._id %>">edit</a><br>
-        <a href="/">home</a>
-    </body>
+    <p>
+        <a href="/login">Back to My Submissions</a> |
+        <a href="/login">Back to Student Dashboard</a>
+    </p>
+</body>
 </html>
