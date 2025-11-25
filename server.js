@@ -186,12 +186,6 @@ app.get('/detail', requireLogin, async (req, res) => {
   }
 });
 
-// 路由：上傳作業頁面
-app.get('/submissions/create/:assignment_id', requireLogin, async (req, res) => {
-  const assignmentId = req.params.assignment_id;
-  const assignment = await db.collection('database_assignment').findOne({ _id: ObjectId(assignmentId) });
-  res.render('create', { assignment, loggedInUser: { user_id: req.session.userId } });
-});
 
 // 路由：提交作業
 app.post('/submissions/create', requireLogin, async (req, res) => {
@@ -203,13 +197,13 @@ app.post('/submissions/create', requireLogin, async (req, res) => {
   }
 
   const uploadDir = path.join(__dirname, 'public/uploads');
-  const filename = Date.now() + '-' + file.name; // 避免覆蓋
+  const filename = Date.now() + '-' + file.name;
   const newPath = path.join(uploadDir, filename);
   await fsPromises.rename(file.path, newPath);
 
-  await db.collection('datebase_submission').insertOne({
-    submission_id: new ObjectId(),
+  await db.collection('database_submission').insertOne({
     assignment_id: assignmentId,
+    course_id: req.query.course_id, // 可傳遞或在前端傳入
     user_id: userId,
     submission_date: new Date(),
     file_path: '/uploads/' + filename,
@@ -217,7 +211,7 @@ app.post('/submissions/create', requireLogin, async (req, res) => {
     file_size: file.size,
     grade: null
   });
-  res.redirect('/info?message=Submission successful');
+  res.redirect('/detail?course_id=' + req.query.course_id);
 });
 
 // 路由：我的提交
@@ -296,6 +290,7 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
