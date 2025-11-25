@@ -136,30 +136,18 @@ app.get('/logout', (req, res) => {
 app.get('/list', requireLogin, async (req, res) => {
   try {
     const userId = req.session.userId;
-
-    // 從 datebase_user 撈使用者資料
     const userDoc = await db.collection('datebase_user').findOne({ user_id: userId });
-
-    // 確保 course_id 是陣列
     let courseIds = [];
     if (Array.isArray(userDoc?.course_id)) {
       courseIds = userDoc.course_id;
     } else if (typeof userDoc?.course_id === 'string') {
       courseIds = [userDoc.course_id];
     }
-
-    // 去重
     courseIds = Array.from(new Set(courseIds));
-
-    // 查詢 datebase_course，course_id 是字串欄位
     const courses = courseIds.length > 0
       ? await db.collection('datebase_course').find({ course_id: { $in: courseIds } }).toArray()
       : [];
-
-    // 取得使用者名稱
     const username = req.session.username;
-
-    // 傳遞給模板
     res.render('list', {
       user: {
         user_id: userId,
@@ -280,6 +268,7 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
