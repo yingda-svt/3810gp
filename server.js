@@ -162,23 +162,28 @@ app.get('/list', requireLogin, async (req, res) => {
 
 
 // 路由：課程詳細
+// 假設你有 requireLogin 中介軟體
 app.get('/detail', requireLogin, async (req, res) => {
   const courseId = req.query.course_id;
   if (!courseId) {
     return res.redirect('/list');
   }
 
-  // 取得課程資料（可選，若需要顯示課程名稱）
-  // const course = await db.collection('database_course').findOne({ course_id: courseId });
+  try {
+    // 取得該課程的所有作業
+    const assignments = await db
+      .collection('database_assignment')
+      .find({ course_id: courseId })
+      .toArray();
 
-  // 取得該課程所有作業
-  const assignments = await db.collection('database_assignment').find({ course_id: courseId }).toArray();
-
-  // 依照你的範例，assignment 可能沒有，若空則呈現 "no assignment"
-  res.render('detail', {
-    course_id: courseId,
-    assignments: assignments
-  });
+    res.render('detail', {
+      course_id: courseId,
+      assignments
+    });
+  } catch (err) {
+    console.error('Error in /detail:', err);
+    res.status(500).send('Server error');
+  }
 });
 
 // 路由：上傳作業頁面
@@ -291,6 +296,7 @@ app.use((req, res) => {
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
 });
+
 
 
 
