@@ -100,6 +100,16 @@ app.post('/login', (req, res) => {
   }
 });
 
+app.get('/dashboard', requireLogin, (req, res) => {
+  res.render('dashboard', { 
+    user: { 
+      user_id: req.session.userId, 
+      username: req.session.username 
+    }
+  });
+});
+
+
 app.get('/list', requireLogin, (req, res) => {
   res.render('list', { 
     user: { user_id: req.session.userId, username: req.session.username },
@@ -283,6 +293,7 @@ app.listen(port, () => {
 app.all('/*', (req, res) => {
   res.status(404).render('info', { message: `${req.path} - Unknown request!` });
 });
+
 
 
 
